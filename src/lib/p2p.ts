@@ -3,7 +3,7 @@
 // P2P setup using Trystero.
 // Host is the single source of truth; guests send actions to host.
 
-import { selfId as torrentSelfId, joinRoom as torrentJoinRoom, type Room } from '@trystero-p2p/torrent';
+import { selfId as torrentSelfId, joinRoom as torrentJoinRoom, type Room, type MessageAction } from '@trystero-p2p/torrent';
 import type { GameState, PlayerAction, HostCommand, Player } from './types';
 
 const APP_ID = 'stakefriends-v1';
@@ -34,32 +34,43 @@ export function joinGameRoom(roomCode: string): P2P {
     roomCode.toLowerCase(),
   );
 
-  const [sendState, onState] = room.makeAction<GameState>('gameState');
-  const [sendAction, onAction] = room.makeAction<PlayerAction>('playerAction');
-  const [sendHostCommand, onHostCommand] = room.makeAction<HostCommand>('hostCommand');
+  // Trystero v0.25 API: makeAction returns a single MessageAction object,
+  // NOT a [send, onMessage] tuple. The callback is `onMessage`, not the array index.
+  const stateAction: MessageAction<GameState> = room.makeAction<GameState>('gameState');
+  const playerActionChannel: MessageAction<PlayerAction> = room.makeAction<PlayerAction>('playerAction');
+  const hostCommandAction: MessageAction<HostCommand> = room.makeAction<HostCommand>('hostCommand');
 
   return {
     selfId: torrentSelfId,
     room,
-    sendState: (state, peerIds) => sendState(state, peerIds),
-    onState,
-    sendAction: (action, peerIds) => sendAction(action, peerIds),
-    onAction,
-    sendHostCommand: (cmd, peerIds) => sendHostCommand(cmd, peerIds),
-    onHostCommand,
+    sendState: (state, peerIds) => stateAction.send(state, peerIds ? { target: peerIds } : undefined),
+    onState: (cb) => {
+      stateAction.onMessage = (data, context) => cb(data, context.peerId);
+      return () => { stateAction.onMessage = null; };
+    },
+    sendAction: (action, peerIds) => playerActionChannel.send(action, peerIds ? { target: peerIds } : undefined),
+    onAction: (cb) => {
+      playerActionChannel.onMessage = (data, context) => cb(data, context.peerId);
+      return () => { playerActionChannel.onMessage = null; };
+    },
+    sendHostCommand: (cmd, peerIds) => hostCommandAction.send(cmd, peerIds ? { target: peerIds } : undefined),
+    onHostCommand: (cb) => {
+      hostCommandAction.onMessage = (data, context) => cb(data, context.peerId);
+      return () => { hostCommandAction.onMessage = null; };
+    },
     onPeerJoin: (cb) => {
-      room.onPeerJoin((peerId) => {
+      room.onPeerJoin = (peerId: string) => {
         console.log('[StakeFriends] peer joined:', peerId);
         cb(peerId);
-      });
-      return () => {};
+      };
+      return () => { room.onPeerJoin = null; };
     },
     onPeerLeave: (cb) => {
-      room.onPeerLeave((peerId) => {
+      room.onPeerLeave = (peerId: string) => {
         console.log('[StakeFriends] peer left:', peerId);
         cb(peerId);
-      });
-      return () => {};
+      };
+      return () => { room.onPeerLeave = null; };
     },
     leave: () => room.leave(),
   };
