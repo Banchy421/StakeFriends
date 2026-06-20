@@ -10,6 +10,7 @@ import {
   resolveGameSelect,
   startFinalVote,
   resolveFinalVote,
+  resolveCoinflip,
   startRoundTimeout,
   applyBailout,
   collectRoundEndBalances,
@@ -36,6 +37,7 @@ export interface UseGameStateApi {
   hostStartGame: (mode: GameMode) => void;
   hostAdvanceFromGameSelect: () => void;
   hostAdvanceFromFinalVote: () => void;
+  hostResolveCoinflip: () => void;
   hostAdvanceFromRoundTimeout: () => void;
   hostSkipRound: () => void;
   hostForceEndRound: () => void;
@@ -135,6 +137,16 @@ export function useGameState(): UseGameStateApi {
       case 'final-vote': {
         const choices = { ...next.finalVoteChoices, [peerId]: action.game };
         next = { ...next, finalVoteChoices: choices };
+        // Auto-resolve if all active players have voted (don't wait for timer)
+        const activePlayers = Object.keys(next.players).filter((id) => !next.players[id].isEliminated);
+        if (Object.keys(choices).length >= activePlayers.length && next.phase === 'final-vote') {
+          next = resolveFinalVote(next);
+          if (next.phase === 'final-coinflip') {
+            Sound.coinSpin();
+          } else {
+            Sound.fanfare();
+          }
+        }
         break;
       }
       case 'final-pick': {
@@ -396,6 +408,16 @@ export function useGameState(): UseGameStateApi {
     void broadcast(next);
   }, [isHost, broadcast]);
 
+  const hostResolveCoinflip = useCallback(() => {
+    const cur = stateRef.current;
+    if (!cur || !isHost) return;
+    if (cur.phase !== 'final-coinflip') return;
+    const next = resolveCoinflip(cur);
+    Sound.coinLand();
+    Sound.fanfare();
+    void broadcast(next);
+  }, [isHost, broadcast]);
+
   const hostAdvanceFromRoundTimeout = useCallback(() => {
     const cur = stateRef.current;
     if (!cur || !isHost) return;
@@ -524,6 +546,7 @@ export function useGameState(): UseGameStateApi {
     hostStartGame,
     hostAdvanceFromGameSelect,
     hostAdvanceFromFinalVote,
+    hostResolveCoinflip,
     hostAdvanceFromRoundTimeout,
     hostSkipRound,
     hostForceEndRound,

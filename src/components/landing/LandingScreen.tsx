@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AVATARS } from '@/lib/types';
 import { Sound, unlockAudio } from '@/lib/sounds';
 import { cn } from '@/lib/utils';
+import { ThemePicker } from '@/components/theme/ThemePicker';
 
 interface LandingScreenProps {
   onCreate: (name: string, avatar: string) => void;
@@ -60,7 +61,12 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+      {/* Theme picker — top right */}
+      <div className="absolute top-4 right-4">
+        <ThemePicker />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -70,7 +76,7 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
         <h1 className="font-display text-6xl md:text-7xl font-bold shimmer mb-2">
           StakeFriends
         </h1>
-        <p className="text-muted-foreground text-lg">
+        <p className="text-lg" style={{ color: 'var(--sf-text-muted)' }}>
           Real-time multiplayer casino. No backend. No accounts.
         </p>
       </motion.div>
@@ -84,29 +90,33 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
         {/* Mode toggle */}
         {onModeChange && (
           <div className="mb-4">
-            <div className="flex gap-1 p-1 bg-[#0a0a0a] rounded-md border border-[#2a2a2a]">
+            <div className="flex gap-1 p-1 rounded-md border" style={{ backgroundColor: 'var(--sf-bg-tertiary)', borderColor: 'var(--sf-border)' }}>
               <button
                 onClick={() => { onModeChange('multiplayer'); Sound.click(); }}
                 onMouseEnter={() => Sound.hover()}
                 className={cn(
                   'flex-1 py-1.5 rounded text-xs font-medium transition-all',
-                  mode === 'multiplayer' ? 'bg-gold text-black' : 'text-muted-foreground hover:text-white',
                 )}
+                style={{
+                  backgroundColor: mode === 'multiplayer' ? 'var(--sf-accent)' : 'transparent',
+                  color: mode === 'multiplayer' ? 'var(--sf-bg)' : 'var(--sf-text-muted)',
+                }}
               >
                 👥 Multiplayer (P2P)
               </button>
               <button
                 onClick={() => { onModeChange('solo'); Sound.click(); }}
                 onMouseEnter={() => Sound.hover()}
-                className={cn(
-                  'flex-1 py-1.5 rounded text-xs font-medium transition-all',
-                  mode === 'solo' ? 'bg-gold text-black' : 'text-muted-foreground hover:text-white',
-                )}
+                className="flex-1 py-1.5 rounded text-xs font-medium transition-all"
+                style={{
+                  backgroundColor: mode === 'solo' ? 'var(--sf-accent)' : 'transparent',
+                  color: mode === 'solo' ? 'var(--sf-bg)' : 'var(--sf-text-muted)',
+                }}
               >
                 🤖 Solo vs Bots
               </button>
             </div>
-            <p className="text-[10px] text-muted-foreground text-center mt-1.5">
+            <p className="text-[10px] text-center mt-1.5" style={{ color: 'var(--sf-text-muted)' }}>
               {mode === 'multiplayer'
                 ? 'Play with friends over WebRTC P2P. Requires WebRTC support.'
                 : 'Practice against AI bots. Same game flow, single browser.'}
@@ -115,19 +125,24 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
         )}
 
         <div className="mb-5">
-          <label className="text-sm text-muted-foreground mb-2 block">Nickname</label>
+          <label className="text-sm mb-2 block" style={{ color: 'var(--sf-text-muted)' }}>Nickname</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value.slice(0, 16))}
             placeholder="Enter your name"
-            className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-gold focus:outline-none rounded-md px-4 py-2.5 text-white"
+            className="w-full rounded-md px-4 py-2.5 focus:outline-none transition-colors"
+            style={{
+              backgroundColor: 'var(--sf-bg-tertiary)',
+              border: '1px solid var(--sf-border)',
+              color: 'var(--sf-text)',
+            }}
             maxLength={16}
           />
         </div>
 
         <div className="mb-5">
-          <label className="text-sm text-muted-foreground mb-2 block">Avatar</label>
+          <label className="text-sm mb-2 block" style={{ color: 'var(--sf-text-muted)' }}>Avatar</label>
           <div className="grid grid-cols-8 gap-1.5">
             {AVATARS.map((a) => (
               <button
@@ -136,8 +151,12 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
                 onMouseEnter={() => Sound.hover()}
                 className={cn(
                   'aspect-square rounded-md text-2xl flex items-center justify-center transition-all',
-                  avatar === a ? 'bg-gold bg-opacity-20 border-2 border-gold scale-105' : 'bg-[#0a0a0a] border border-[#2a2a2a] hover:border-gold'
                 )}
+                style={{
+                  backgroundColor: avatar === a ? `rgba(var(--sf-accent-rgb), 0.2)` : 'var(--sf-bg-tertiary)',
+                  border: avatar === a ? '2px solid var(--sf-accent)' : '1px solid var(--sf-border)',
+                  transform: avatar === a ? 'scale(1.05)' : 'scale(1)',
+                }}
               >
                 {a}
               </button>
@@ -147,22 +166,24 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
 
         {mode === 'multiplayer' && (
           <div className="mb-5">
-            <div className="flex gap-2 p-1 bg-[#0a0a0a] rounded-md border border-[#2a2a2a]">
+            <div className="flex gap-2 p-1 rounded-md border" style={{ backgroundColor: 'var(--sf-bg-tertiary)', borderColor: 'var(--sf-border)' }}>
               <button
                 onClick={() => { setAction('create'); Sound.click(); }}
-                className={cn(
-                  'flex-1 py-2 rounded text-sm font-medium transition-all',
-                  action === 'create' ? 'bg-gold text-black' : 'text-muted-foreground hover:text-white'
-                )}
+                className="flex-1 py-2 rounded text-sm font-medium transition-all"
+                style={{
+                  backgroundColor: action === 'create' ? 'var(--sf-accent)' : 'transparent',
+                  color: action === 'create' ? 'var(--sf-bg)' : 'var(--sf-text-muted)',
+                }}
               >
                 Create Room
               </button>
               <button
                 onClick={() => { setAction('join'); Sound.click(); }}
-                className={cn(
-                  'flex-1 py-2 rounded text-sm font-medium transition-all',
-                  action === 'join' ? 'bg-gold text-black' : 'text-muted-foreground hover:text-white'
-                )}
+                className="flex-1 py-2 rounded text-sm font-medium transition-all"
+                style={{
+                  backgroundColor: action === 'join' ? 'var(--sf-accent)' : 'transparent',
+                  color: action === 'join' ? 'var(--sf-bg)' : 'var(--sf-text-muted)',
+                }}
               >
                 Join Room
               </button>
@@ -178,13 +199,18 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
               exit={{ opacity: 0, height: 0 }}
               className="mb-5 overflow-hidden"
             >
-              <label className="text-sm text-muted-foreground mb-2 block">Room Code</label>
+              <label className="text-sm mb-2 block" style={{ color: 'var(--sf-text-muted)' }}>Room Code</label>
               <input
                 type="text"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
                 placeholder="ABCDEF"
-                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-gold focus:outline-none rounded-md px-4 py-2.5 text-white text-center text-2xl tracking-[0.5em] font-mono uppercase"
+                className="w-full rounded-md px-4 py-2.5 text-center text-2xl tracking-[0.5em] font-mono uppercase focus:outline-none transition-colors"
+                style={{
+                  backgroundColor: 'var(--sf-bg-tertiary)',
+                  border: '1px solid var(--sf-border)',
+                  color: 'var(--sf-text)',
+                }}
                 maxLength={6}
               />
             </motion.div>
@@ -192,13 +218,13 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
         </AnimatePresence>
 
         {error && (
-          <div className="text-lose text-sm mb-3 text-center">{error}</div>
+          <div className="text-sm mb-3 text-center" style={{ color: 'var(--sf-lose)' }}>{error}</div>
         )}
 
         <button
           onClick={handleSubmit}
           onMouseEnter={() => Sound.hover()}
-          className="w-full bg-gold hover:bg-gold-dark text-black font-bold py-3 rounded-md transition-all glow-gold"
+          className="btn-premium w-full py-3 font-bold"
         >
           {mode === 'solo' ? 'Start Solo Game' : action === 'create' ? 'Create Room' : 'Join Room'}
         </button>
@@ -208,7 +234,8 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}
-        className="mt-6 text-center text-xs text-muted-foreground max-w-md"
+        className="mt-6 text-center text-xs max-w-md"
+        style={{ color: 'var(--sf-text-muted)' }}
       >
         {mode === 'multiplayer' ? (
           <>

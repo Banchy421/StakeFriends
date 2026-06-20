@@ -6,6 +6,7 @@ export type Phase =
   | 'round-active'
   | 'round-timeout'
   | 'final-vote'
+  | 'final-coinflip'
   | 'final-round'
   | 'results';
 
@@ -52,6 +53,7 @@ export interface GameState {
   playerGameChoices: Record<string, GameName>;
   finalVoteOptions: GameName[];
   finalVoteChoices: Record<string, GameName>;
+  coinflipResult: GameName | null;   // winner of a 50/50 tie-break coinflip
   skipVotes: string[];
   players: Record<string, Player>;
   hostId: string;

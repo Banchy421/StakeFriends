@@ -153,31 +153,42 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
               />
             </>
           ) : null}
-          {phase === 'crashed' && (
-            <text x="50" y="50" textAnchor="middle" fill="#E53E3E" fontSize="14" fontWeight="bold">
-              💥 CRASHED @ {crashPoint.toFixed(2)}×
-            </text>
-          )}
         </svg>
 
         <div className="relative z-10 text-center">
-          <motion.div
-            animate={
-              phase === 'running'
-                ? { scale: [1, 1.05, 1] }
-                : phase === 'crashed'
-                  ? { scale: [1, 1.3, 1] }
+          {phase === 'crashed' ? (
+            <>
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-lose text-2xl font-bold mb-1"
+              >
+                💥 CRASHED
+              </motion.div>
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 0.5 }}
+                className="font-display font-bold text-lose text-6xl"
+              >
+                {crashPoint.toFixed(2)}×
+              </motion.div>
+            </>
+          ) : (
+            <motion.div
+              animate={
+                phase === 'running'
+                  ? { scale: [1, 1.05, 1] }
                   : {}
-            }
-            transition={{ duration: 0.5, repeat: phase === 'running' ? Infinity : 0 }}
-            className={cn(
-              'font-display font-bold',
-              phase === 'crashed' ? 'text-lose text-5xl' : 'text-gold text-7xl',
-              phase === 'cashed' && 'text-win text-7xl',
-            )}
-          >
-            {multiplier.toFixed(2)}×
-          </motion.div>
+              }
+              transition={{ duration: 0.5, repeat: phase === 'running' ? Infinity : 0 }}
+              className={cn(
+                'font-display font-bold',
+                phase === 'cashed' ? 'text-win text-7xl' : 'text-gold text-7xl',
+              )}
+            >
+              {multiplier.toFixed(2)}×
+            </motion.div>
+          )}
           {phase === 'idle' && (
             <div className="text-muted-foreground text-sm mt-2">Place a bet to launch</div>
           )}

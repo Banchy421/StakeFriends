@@ -17,6 +17,7 @@ export function makeInitialState(hostPlayer: Player, mode: GameMode): GameState 
     playerGameChoices: {},
     finalVoteOptions: [],
     finalVoteChoices: {},
+    coinflipResult: null,
     skipVotes: [],
     players: { [hostPlayer.id]: hostPlayer },
     hostId: hostPlayer.id,
@@ -149,6 +150,7 @@ export function startFinalVote(state: GameState): GameState {
     roundDuration: 10,
     finalVoteOptions: pickN(ALL_GAMES, 2),
     finalVoteChoices: {},
+    coinflipResult: null,
     playerGameChoices: {},
     skipVotes: [],
     roundWinnerId: null,
@@ -162,7 +164,12 @@ export function startFinalVote(state: GameState): GameState {
   };
 }
 
-/** Tally final votes; tie -> random. */
+/** Tally final votes.
+ *  - Clear winner (majority): go straight to round-active with that game for everyone.
+ *  - 50/50 tie: go to final-coinflip phase. The host sets coinflipResult to one of the
+ *    two options (random), and the FinalCoinflipScreen plays the animation, then the
+ *    host calls resolveCoinflip to advance to round-active.
+ */
 export function resolveFinalVote(state: GameState, rng: () => number = Math.random): GameState {
   const counts: Record<string, number> = {};
   for (const opt of state.finalVoteOptions) counts[opt] = 0;
@@ -170,6 +177,8 @@ export function resolveFinalVote(state: GameState, rng: () => number = Math.rand
     const v = state.finalVoteChoices[k];
     if (counts[v] !== undefined) counts[v]++;
   }
+
+  // Find the option(s) with the most votes
   let max = -1;
   let winners: GameName[] = [];
   for (const opt of state.finalVoteOptions) {
@@ -180,21 +189,67 @@ export function resolveFinalVote(state: GameState, rng: () => number = Math.rand
       winners.push(opt);
     }
   }
-  const finalGame = winners[Math.floor(rng() * winners.length)];
-  // The losing option is the other game from finalVoteOptions
-  const losingGame = state.finalVoteOptions.find((g) => g !== finalGame) ?? finalGame;
-  // transition to game-select-like for personal picks (10s).
-  // Players can pick either the winning game or the losing game (their personal choice).
-  const pickOptions: GameName[] = finalGame === losingGame
-    ? [finalGame]
-    : [finalGame, losingGame];
+
+  if (winners.length === 1) {
+    // Clear winner — go straight to round-active with that game for everyone
+    return startRoundWithGame(state, winners[0]);
+  }
+
+  // 50/50 tie — go to coinflip phase. Host will pick a random winner.
+  const coinflipWinner = winners[Math.floor(rng() * winners.length)];
   return {
     ...state,
-    phase: 'game-select',
-    availableGames: pickOptions,
-    finalVoteOptions: [finalGame],
-    timeRemaining: 10,
-    roundDuration: 10,
+    phase: 'final-coinflip' as Phase,
+    coinflipResult: coinflipWinner,
+    timeRemaining: 4, // 4s for the coinflip animation
+    roundDuration: 4,
+  };
+}
+
+/** Resolve the coinflip — advance to round-active with the coinflip winner. */
+export function resolveCoinflip(state: GameState): GameState {
+  const game = state.coinflipResult;
+  if (!game) return state;
+  return startRoundWithGame(state, game);
+}
+
+/** Start the round with a specific game assigned to all players. Skips game-select. */
+function startRoundWithGame(state: GameState, game: GameName): GameState {
+  const choices: Record<string, GameName> = {};
+  const activePlayers = Object.keys(state.players).filter((id) => !state.players[id].isEliminated);
+  for (const pid of activePlayers) {
+    choices[pid] = game;
+  }
+  // Reset round bonus for everyone except previous round winner (+10%)
+  const players = { ...state.players };
+  for (const pid of Object.keys(players)) {
+    players[pid] = { ...players[pid], roundBonus: 1.0 };
+  }
+  if (state.roundWinnerId && players[state.roundWinnerId]) {
+    players[state.roundWinnerId] = {
+      ...players[state.roundWinnerId],
+      roundBonus: 1.1,
+    };
+  }
+  // Snapshot start-of-round balances for bailout penalty calc
+  const roundStartBalances: Record<string, number> = {};
+  for (const pid of Object.keys(players)) {
+    roundStartBalances[pid] = players[pid].balance;
+  }
+  return {
+    ...state,
+    players,
+    playerGameChoices: choices,
+    availableGames: [game],
+    finalVoteOptions: [game],
+    phase: 'round-active' as Phase,
+    timeRemaining: roundDurationFor(state.gameMode, state.currentRound),
+    roundDuration: roundDurationFor(state.gameMode, state.currentRound),
+    crashPoints: crashPointsForRound(state.roundSeed, 10),
+    roundStartBalances,
+    roundEndBalances: {},
+    lastBalanceUpdate: {},
+    coinflipResult: null,
   };
 }
 

@@ -17,6 +17,7 @@ import { Blackjack } from '@/components/games/Blackjack';
 import { Crash } from '@/components/games/Crash';
 import { Coinflip } from '@/components/games/Coinflip';
 import { Keno } from '@/components/games/Keno';
+import { ThemePicker } from '@/components/theme/ThemePicker';
 import { cn } from '@/lib/utils';
 
 interface GameLayoutProps {
@@ -166,13 +167,19 @@ export function GameLayout({
             <button
               onClick={onForceEndRound}
               onMouseEnter={() => Sound.hover()}
-              className="text-xs px-3 py-2 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-lose text-muted-foreground hover:text-lose rounded-md font-medium transition-all"
+              className="text-xs px-3 py-2 rounded-md font-medium transition-all"
+              style={{
+                backgroundColor: 'var(--sf-bg-secondary)',
+                border: '1px solid var(--sf-border)',
+                color: 'var(--sf-text-muted)',
+              }}
               title="Force-end this round immediately (use if round is stuck)"
             >
               ⏹ Force End
             </button>
           )}
-          <button onClick={onLeave} className="text-xs text-muted-foreground hover:text-lose">
+          <ThemePicker compact />
+          <button onClick={onLeave} className="text-xs hover:text-lose transition-colors" style={{ color: 'var(--sf-text-muted)' }}>
             Leave
           </button>
         </div>

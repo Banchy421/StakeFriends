@@ -85,121 +85,170 @@ function noise(duration: number, gain = 0.2, filterFreq = 8000, delay = 0): void
 
 export const Sound = {
   click() {
-    tone({ freq: 800, duration: 0.04, type: 'square', gain: 0.08 });
+    tone({ freq: 1000, duration: 0.03, type: 'square', gain: 0.06 });
+    tone({ freq: 1500, duration: 0.02, type: 'sine', gain: 0.04, delay: 0.01 });
   },
   tick() {
-    tone({ freq: 1200, duration: 0.025, type: 'square', gain: 0.05 });
+    tone({ freq: 1400, duration: 0.02, type: 'square', gain: 0.04 });
   },
   hover() {
-    tone({ freq: 600, duration: 0.03, type: 'sine', gain: 0.04 });
+    tone({ freq: 800, duration: 0.025, type: 'sine', gain: 0.03 });
   },
   bet() {
-    tone({ freq: 440, duration: 0.08, type: 'square', gain: 0.1 });
-    tone({ freq: 660, duration: 0.08, type: 'square', gain: 0.08, delay: 0.05 });
+    // Chip placement — triple clink
+    tone({ freq: 1200, duration: 0.04, type: 'triangle', gain: 0.1 });
+    tone({ freq: 1600, duration: 0.06, type: 'triangle', gain: 0.08, delay: 0.03 });
+    tone({ freq: 2000, duration: 0.04, type: 'sine', gain: 0.05, delay: 0.06 });
   },
   winSmall() {
-    tone({ freq: 660, duration: 0.1, type: 'sine', gain: 0.12 });
-    tone({ freq: 880, duration: 0.12, type: 'sine', gain: 0.1, delay: 0.08 });
+    // Pleasant ascending chime
+    tone({ freq: 660, duration: 0.08, type: 'sine', gain: 0.12 });
+    tone({ freq: 880, duration: 0.1, type: 'sine', gain: 0.1, delay: 0.06 });
+    tone({ freq: 1100, duration: 0.12, type: 'sine', gain: 0.08, delay: 0.12 });
   },
   winBig() {
-    [523, 659, 784, 1047].forEach((f, i) => tone({ freq: f, duration: 0.18, type: 'triangle', gain: 0.15, delay: i * 0.08 }));
-    [523, 659, 784, 1047].forEach((f, i) => tone({ freq: f * 2, duration: 0.18, type: 'sine', gain: 0.08, delay: i * 0.08 + 0.05 }));
+    // Triumphant fanfare
+    [523, 659, 784, 1047, 1319].forEach((f, i) => tone({ freq: f, duration: 0.2, type: 'triangle', gain: 0.15, delay: i * 0.07 }));
+    [1046, 1318, 1568, 2093, 2637].forEach((f, i) => tone({ freq: f, duration: 0.2, type: 'sine', gain: 0.06, delay: i * 0.07 + 0.03 }));
   },
   lose() {
-    tone({ freq: 200, duration: 0.4, type: 'sawtooth', gain: 0.12, sweepTo: 80 });
-    tone({ freq: 150, duration: 0.5, type: 'square', gain: 0.08, sweepTo: 50, delay: 0.05 });
+    // Descending sad tone
+    tone({ freq: 400, duration: 0.15, type: 'sawtooth', gain: 0.1, sweepTo: 200 });
+    tone({ freq: 300, duration: 0.2, type: 'square', gain: 0.08, sweepTo: 150, delay: 0.1 });
+    tone({ freq: 200, duration: 0.3, type: 'sine', gain: 0.06, sweepTo: 100, delay: 0.2 });
   },
   chipClink() {
-    tone({ freq: 2400, duration: 0.06, type: 'triangle', gain: 0.1 });
-    tone({ freq: 1800, duration: 0.08, type: 'triangle', gain: 0.08, delay: 0.02 });
+    tone({ freq: 2800, duration: 0.05, type: 'triangle', gain: 0.12 });
+    tone({ freq: 3400, duration: 0.04, type: 'triangle', gain: 0.08, delay: 0.02 });
+    tone({ freq: 2000, duration: 0.06, type: 'sine', gain: 0.06, delay: 0.01 });
   },
   coinSpin() {
-    tone({ freq: 1200, duration: 0.5, type: 'sine', gain: 0.05, sweepTo: 800 });
+    // Spinning whoosh
+    tone({ freq: 800, duration: 0.4, type: 'sine', gain: 0.06, sweepTo: 1400 });
+    tone({ freq: 1200, duration: 0.4, type: 'triangle', gain: 0.04, sweepTo: 600, delay: 0.05 });
   },
   coinLand() {
-    tone({ freq: 900, duration: 0.1, type: 'triangle', gain: 0.15 });
-    noise(0.08, 0.08, 4000);
+    // Metallic clink
+    tone({ freq: 1800, duration: 0.05, type: 'triangle', gain: 0.15 });
+    tone({ freq: 2400, duration: 0.04, type: 'sine', gain: 0.1, delay: 0.01 });
+    tone({ freq: 1200, duration: 0.08, type: 'triangle', gain: 0.08, delay: 0.02 });
+    noise(0.05, 0.06, 5000);
   },
   cashRegister() {
-    tone({ freq: 1568, duration: 0.06, type: 'square', gain: 0.12 });
-    tone({ freq: 2093, duration: 0.1, type: 'square', gain: 0.1, delay: 0.05 });
+    // Cha-ching
+    tone({ freq: 1568, duration: 0.05, type: 'square', gain: 0.12 });
+    tone({ freq: 2093, duration: 0.08, type: 'square', gain: 0.1, delay: 0.04 });
+    tone({ freq: 2637, duration: 0.12, type: 'sine', gain: 0.08, delay: 0.08 });
   },
   cardDeal() {
-    noise(0.08, 0.1, 6000);
-    tone({ freq: 300, duration: 0.06, type: 'square', gain: 0.05 });
+    // Card swoosh
+    noise(0.06, 0.08, 5000);
+    tone({ freq: 400, duration: 0.04, type: 'square', gain: 0.04 });
+    tone({ freq: 600, duration: 0.03, type: 'sine', gain: 0.03, delay: 0.02 });
   },
   cardFlip() {
-    tone({ freq: 500, duration: 0.05, type: 'sine', gain: 0.08, sweepTo: 800 });
+    tone({ freq: 600, duration: 0.04, type: 'sine', gain: 0.08, sweepTo: 1000 });
+    tone({ freq: 900, duration: 0.03, type: 'triangle', gain: 0.05, delay: 0.02 });
   },
   reveal() {
-    tone({ freq: 600, duration: 0.08, type: 'triangle', gain: 0.1 });
-    tone({ freq: 900, duration: 0.1, type: 'triangle', gain: 0.08, delay: 0.04 });
+    tone({ freq: 700, duration: 0.08, type: 'triangle', gain: 0.1 });
+    tone({ freq: 1050, duration: 0.1, type: 'triangle', gain: 0.08, delay: 0.04 });
+    tone({ freq: 1400, duration: 0.08, type: 'sine', gain: 0.05, delay: 0.08 });
   },
   gem() {
-    tone({ freq: 880, duration: 0.08, type: 'sine', gain: 0.1 });
-    tone({ freq: 1320, duration: 0.1, type: 'sine', gain: 0.08, delay: 0.04 });
+    // Sparkly gem sound
+    tone({ freq: 1318, duration: 0.06, type: 'sine', gain: 0.12 });
+    tone({ freq: 1760, duration: 0.08, type: 'sine', gain: 0.1, delay: 0.03 });
+    tone({ freq: 2637, duration: 0.1, type: 'sine', gain: 0.06, delay: 0.06 });
   },
   explosion() {
-    noise(0.5, 0.3, 800);
-    tone({ freq: 80, duration: 0.6, type: 'sawtooth', gain: 0.15, sweepTo: 30 });
+    // Deep explosion
+    noise(0.6, 0.35, 600);
+    tone({ freq: 120, duration: 0.7, type: 'sawtooth', gain: 0.18, sweepTo: 30 });
+    tone({ freq: 80, duration: 0.5, type: 'square', gain: 0.1, sweepTo: 40, delay: 0.05 });
   },
   crashBoom() {
-    noise(0.6, 0.35, 600);
-    tone({ freq: 100, duration: 0.7, type: 'sawtooth', gain: 0.18, sweepTo: 40 });
+    // Rocket crash — deep boom + explosion
+    noise(0.7, 0.4, 500);
+    tone({ freq: 150, duration: 0.8, type: 'sawtooth', gain: 0.2, sweepTo: 40 });
+    tone({ freq: 100, duration: 0.6, type: 'square', gain: 0.12, sweepTo: 50, delay: 0.1 });
+    noise(0.3, 0.15, 2000, 0.3);
   },
   reelSpin() {
-    tone({ freq: 200, duration: 0.6, type: 'sawtooth', gain: 0.06, sweepTo: 350 });
+    // Mechanical reel spin
+    tone({ freq: 300, duration: 0.5, type: 'sawtooth', gain: 0.07, sweepTo: 400 });
+    tone({ freq: 200, duration: 0.5, type: 'square', gain: 0.03, sweepTo: 250, delay: 0.05 });
   },
   reelStop() {
-    tone({ freq: 400, duration: 0.08, type: 'square', gain: 0.12 });
-    noise(0.04, 0.08, 4000);
+    // Mechanical clunk
+    tone({ freq: 500, duration: 0.06, type: 'square', gain: 0.14 });
+    tone({ freq: 350, duration: 0.08, type: 'square', gain: 0.1, delay: 0.02 });
+    noise(0.05, 0.1, 3000);
   },
   plinkoTick() {
-    tone({ freq: 1500, duration: 0.025, type: 'square', gain: 0.06 });
+    tone({ freq: 1800, duration: 0.02, type: 'square', gain: 0.05 });
+    tone({ freq: 2400, duration: 0.015, type: 'sine', gain: 0.03, delay: 0.005 });
   },
   plinkoLand() {
-    tone({ freq: 200, duration: 0.2, type: 'sine', gain: 0.15 });
-    noise(0.1, 0.1, 500);
+    tone({ freq: 300, duration: 0.15, type: 'sine', gain: 0.15 });
+    tone({ freq: 200, duration: 0.2, type: 'triangle', gain: 0.1, delay: 0.03 });
+    noise(0.12, 0.1, 600);
   },
   towerClimb() {
-    tone({ freq: 440, duration: 0.12, type: 'triangle', gain: 0.1 });
-    tone({ freq: 660, duration: 0.12, type: 'triangle', gain: 0.08, delay: 0.06 });
+    // Ascending step
+    tone({ freq: 523, duration: 0.08, type: 'triangle', gain: 0.1 });
+    tone({ freq: 659, duration: 0.08, type: 'triangle', gain: 0.08, delay: 0.05 });
+    tone({ freq: 784, duration: 0.1, type: 'triangle', gain: 0.06, delay: 0.1 });
   },
   towerFall() {
-    tone({ freq: 400, duration: 0.6, type: 'sawtooth', gain: 0.15, sweepTo: 80 });
+    // Descending crash
+    tone({ freq: 500, duration: 0.5, type: 'sawtooth', gain: 0.15, sweepTo: 80 });
     noise(0.4, 0.2, 1000);
+    tone({ freq: 100, duration: 0.4, type: 'square', gain: 0.1, sweepTo: 50, delay: 0.1 });
   },
   bailout() {
-    tone({ freq: 300, duration: 0.15, type: 'sine', gain: 0.1 });
-    tone({ freq: 450, duration: 0.2, type: 'sine', gain: 0.1, delay: 0.1 });
+    tone({ freq: 400, duration: 0.12, type: 'sine', gain: 0.1 });
+    tone({ freq: 600, duration: 0.15, type: 'sine', gain: 0.1, delay: 0.08 });
+    tone({ freq: 800, duration: 0.12, type: 'sine', gain: 0.08, delay: 0.16 });
   },
   countdownTick() {
-    tone({ freq: 800, duration: 0.06, type: 'square', gain: 0.08 });
+    tone({ freq: 1000, duration: 0.05, type: 'square', gain: 0.07 });
   },
   countdownEnd() {
-    tone({ freq: 1200, duration: 0.2, type: 'sine', gain: 0.15 });
-    tone({ freq: 1600, duration: 0.3, type: 'sine', gain: 0.12, delay: 0.1 });
+    tone({ freq: 1500, duration: 0.15, type: 'sine', gain: 0.15 });
+    tone({ freq: 2000, duration: 0.25, type: 'sine', gain: 0.12, delay: 0.08 });
   },
   fanfare() {
-    [523, 659, 784, 1047, 1319].forEach((f, i) => tone({ freq: f, duration: 0.25, type: 'triangle', gain: 0.15, delay: i * 0.1 }));
+    [523, 659, 784, 1047].forEach((f, i) => tone({ freq: f, duration: 0.25, type: 'triangle', gain: 0.15, delay: i * 0.1 }));
   },
   join() {
-    tone({ freq: 523, duration: 0.1, type: 'sine', gain: 0.1 });
-    tone({ freq: 784, duration: 0.12, type: 'sine', gain: 0.1, delay: 0.06 });
+    tone({ freq: 600, duration: 0.08, type: 'sine', gain: 0.1 });
+    tone({ freq: 900, duration: 0.1, type: 'sine', gain: 0.1, delay: 0.05 });
+    tone({ freq: 1200, duration: 0.08, type: 'sine', gain: 0.06, delay: 0.1 });
   },
   leave() {
-    tone({ freq: 400, duration: 0.15, type: 'sine', gain: 0.08, sweepTo: 300 });
+    tone({ freq: 500, duration: 0.12, type: 'sine', gain: 0.08, sweepTo: 300 });
+    tone({ freq: 350, duration: 0.15, type: 'sine', gain: 0.06, sweepTo: 200, delay: 0.05 });
   },
   skip() {
-    tone({ freq: 300, duration: 0.1, type: 'square', gain: 0.08 });
+    tone({ freq: 400, duration: 0.08, type: 'square', gain: 0.08 });
+    tone({ freq: 300, duration: 0.1, type: 'square', gain: 0.06, delay: 0.04 });
   },
   fanfareBig() {
-    [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone({ freq: f, duration: 0.3, type: 'triangle', gain: 0.18, delay: i * 0.1 }));
-    [261, 329, 392, 523, 659, 784].forEach((f, i) => tone({ freq: f, duration: 0.3, type: 'sine', gain: 0.1, delay: i * 0.1 }));
+    // Grand champion fanfare
+    [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => tone({ freq: f, duration: 0.35, type: 'triangle', gain: 0.18, delay: i * 0.1 }));
+    [261, 329, 392, 523, 659, 784, 1047].forEach((f, i) => tone({ freq: f, duration: 0.35, type: 'sine', gain: 0.1, delay: i * 0.1 }));
   },
   error() {
-    tone({ freq: 200, duration: 0.2, type: 'square', gain: 0.1 });
-    tone({ freq: 150, duration: 0.3, type: 'square', gain: 0.08, delay: 0.05 });
+    tone({ freq: 250, duration: 0.15, type: 'square', gain: 0.1 });
+    tone({ freq: 200, duration: 0.2, type: 'square', gain: 0.08, delay: 0.08 });
+  },
+  rocketLaunch() {
+    tone({ freq: 200, duration: 0.8, type: 'sawtooth', gain: 0.08, sweepTo: 800 });
+    noise(0.6, 0.06, 3000);
+  },
+  rocketTick() {
+    tone({ freq: 1600, duration: 0.02, type: 'square', gain: 0.04 });
   },
 };
 

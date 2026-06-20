@@ -8,6 +8,7 @@ import { LobbyScreen } from '@/components/lobby/LobbyScreen';
 import { GameSelectScreen } from '@/components/phases/GameSelectScreen';
 import { RoundTimeoutScreen } from '@/components/phases/RoundTimeoutScreen';
 import { FinalVoteScreen } from '@/components/phases/FinalVoteScreen';
+import { FinalCoinflipScreen } from '@/components/phases/FinalCoinflipScreen';
 import { ResultsScreen } from '@/components/phases/ResultsScreen';
 import { GameLayout } from '@/components/game/GameLayout';
 import type { Player, GameMode } from '@/lib/types';
@@ -170,6 +171,16 @@ export default function Home() {
           isHost={api.isHost}
           onVote={api.finalVote}
           onAdvance={api.hostAdvanceFromFinalVote}
+          onLeave={handleLeave}
+        />
+      )}
+
+      {phase === 'final-coinflip' && (
+        <FinalCoinflipScreen
+          state={api.state}
+          self={api.self}
+          isHost={api.isHost}
+          onResolve={api.hostResolveCoinflip}
           onLeave={handleLeave}
         />
       )}

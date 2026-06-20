@@ -55,10 +55,12 @@ export function FinalVoteScreen({ state, self, isHost, onVote, onAdvance, onLeav
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <p className="text-lg text-muted-foreground">
-            Which game will be the <span className="text-gold font-bold">FINAL ROUND</span>?
+          <p className="text-lg" style={{ color: 'var(--sf-text-muted)' }}>
+            Which game will be the <span style={{ color: 'var(--sf-accent)', fontWeight: 'bold' }}>FINAL ROUND</span>?
           </p>
-          <p className="text-xs text-muted-foreground mt-1">Majority wins. Tie = random.</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--sf-text-muted)' }}>
+            Majority wins instantly. 50/50 tie = coinflip!
+          </p>
         </motion.div>
 
         <div className="grid grid-cols-2 gap-6 max-w-2xl w-full">

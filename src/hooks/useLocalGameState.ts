@@ -15,6 +15,7 @@ import {
   resolveGameSelect,
   startFinalVote,
   resolveFinalVote,
+  resolveCoinflip,
   startRoundTimeout,
   applyBailout,
   collectRoundEndBalances,
@@ -39,6 +40,7 @@ export interface UseLocalGameStateApi {
   hostStartGame: (mode: GameMode) => void;
   hostAdvanceFromGameSelect: () => void;
   hostAdvanceFromFinalVote: () => void;
+  hostResolveCoinflip: () => void;
   hostAdvanceFromRoundTimeout: () => void;
   hostSkipRound: () => void;
   hostForceEndRound: () => void;
@@ -103,9 +105,9 @@ export function useLocalGameState(): UseLocalGameStateApi {
   const hostStartGame = useCallback((mode: GameMode) => {
     const cur = stateRef.current;
     if (!cur) return;
-    // Spawn 2 bot opponents in solo mode for testing
+    // Spawn 1 bot opponent in solo mode (2 players total = even = coinflip possible on tie)
     let next = { ...cur, gameMode: mode, totalRounds: mode === 'standard' ? 3 : 6 };
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 1; i++) {
       const bot: Player = {
         id: `bot-${i}-${Date.now()}`,
         name: SOLO_BOT_NAMES[i],
@@ -156,6 +158,16 @@ export function useLocalGameState(): UseLocalGameStateApi {
       }
     }
     next = resolveFinalVote(next);
+    broadcast(next);
+  }, [broadcast]);
+
+  const hostResolveCoinflip = useCallback(() => {
+    const cur = stateRef.current;
+    if (!cur) return;
+    if (cur.phase !== 'final-coinflip') return;
+    const next = resolveCoinflip(cur);
+    Sound.coinLand();
+    Sound.fanfare();
     broadcast(next);
   }, [broadcast]);
 
@@ -228,10 +240,31 @@ export function useLocalGameState(): UseLocalGameStateApi {
   const finalVote = useCallback((game: GameName) => {
     const cur = stateRef.current;
     if (!cur || !selfRef.current) return;
-    broadcast({
+    // Player votes
+    let next = {
       ...cur,
       finalVoteChoices: { ...cur.finalVoteChoices, [selfRef.current.id]: game },
-    });
+    };
+    // Auto-vote for bots immediately (so the vote resolves fast in solo mode)
+    for (const pid of Object.keys(next.players)) {
+      if (pid.startsWith('bot-') && !next.finalVoteChoices[pid]) {
+        next = {
+          ...next,
+          finalVoteChoices: { ...next.finalVoteChoices, [pid]: next.finalVoteOptions[Math.floor(Math.random() * next.finalVoteOptions.length)] },
+        };
+      }
+    }
+    // Auto-resolve if all active players have voted
+    const activePlayers = Object.keys(next.players).filter((id) => !next.players[id].isEliminated);
+    if (Object.keys(next.finalVoteChoices).length >= activePlayers.length && next.phase === 'final-vote') {
+      next = resolveFinalVote(next);
+      if (next.phase === 'final-coinflip') {
+        Sound.coinSpin();
+      } else {
+        Sound.fanfare();
+      }
+    }
+    broadcast(next);
   }, [broadcast]);
 
   const skipVote = useCallback(() => {
@@ -322,6 +355,7 @@ export function useLocalGameState(): UseLocalGameStateApi {
     hostStartGame,
     hostAdvanceFromGameSelect,
     hostAdvanceFromFinalVote,
+    hostResolveCoinflip,
     hostAdvanceFromRoundTimeout,
     hostSkipRound,
     hostForceEndRound,
