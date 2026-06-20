@@ -105,9 +105,9 @@ export function useLocalGameState(): UseLocalGameStateApi {
   const hostStartGame = useCallback((mode: GameMode) => {
     const cur = stateRef.current;
     if (!cur) return;
-    // Spawn 1 bot opponent in solo mode (2 players total = even = coinflip possible on tie)
+    // Spawn 2 bot opponents in solo mode for testing
     let next = { ...cur, gameMode: mode, totalRounds: mode === 'standard' ? 3 : 6 };
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < 2; i++) {
       const bot: Player = {
         id: `bot-${i}-${Date.now()}`,
         name: SOLO_BOT_NAMES[i],
