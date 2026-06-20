@@ -25,18 +25,22 @@ interface LevelData {
   bombChance: number;
 }
 
+/** Multiplier per level — starts at 1.10×, grows ~1.18× per level (tapering).
+ *  Much lower than before to keep the game balanced. */
 function multiplierForLevel(level: number): number {
-  if (level <= 0) return 1.15;
-  let m = 1.15;
+  if (level <= 0) return 1.10;
+  let m = 1.10;
   for (let i = 1; i <= level; i++) {
-    const growth = i < 5 ? 1.35 : i < 10 ? 1.22 : i < 15 ? 1.15 : 1.10;
+    const growth = i < 4 ? 1.18 : i < 8 ? 1.13 : i < 12 ? 1.08 : 1.05;
     m *= growth;
   }
   return Math.round(m * 100) / 100;
 }
 
+/** Bomb chance per level — starts at 33%, increases ~4% per level, capped at 90%.
+ *  Steeper than before so high levels are very risky. */
 function bombChanceForLevel(level: number): number {
-  return Math.min(0.85, 0.33 + level * 0.03);
+  return Math.min(0.90, 0.33 + level * 0.04);
 }
 
 export function Tower({ balance, onBalanceChange, bonusMultiplier, timeRemaining }: TowerProps) {

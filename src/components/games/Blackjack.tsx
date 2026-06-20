@@ -31,9 +31,15 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
   const deckIndexRef = useRef(0);
   const cardIdRef = useRef(0);
   const balanceRef = useRef(balance);
+  const playerHandRef = useRef<{ card: Card; id: number }[]>([]);
+  const dealerHandRef = useRef<{ card: Card; id: number }[]>([]);
+  const deckRef = useRef<Card[]>([]);
 
-  // Keep balanceRef in sync with the latest balance prop
+  // Keep refs in sync with the latest state
   useEffect(() => { balanceRef.current = balance; }, [balance]);
+  useEffect(() => { playerHandRef.current = playerHand; }, [playerHand]);
+  useEffect(() => { dealerHandRef.current = dealerHand; }, [dealerHand]);
+  useEffect(() => { deckRef.current = deck; }, [deck]);
 
   const nextCardId = () => ++cardIdRef.current;
 
@@ -86,14 +92,14 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
   const hit = async () => {
     if (phase !== 'player') return;
     Sound.cardDeal();
-    const card = { ...deck[deckIndexRef.current++], faceUp: true };
-    const newHand = [...playerHand, { card, id: nextCardId() }];
+    const card = { ...deckRef.current[deckIndexRef.current++], faceUp: true };
+    const newHand = [...playerHandRef.current, { card, id: nextCardId() }];
     setPlayerHand(newHand);
     const v = handValue(newHand.map(c => c.card)).total;
     if (v > 21) {
       await sleep(400);
       // Flip dealer's hole card
-      const dFlipped = dealerHand.map((c, i) => i === 1 ? { ...c, card: { ...c.card, faceUp: true } } : c);
+      const dFlipped = dealerHandRef.current.map((c, i) => i === 1 ? { ...c, card: { ...c.card, faceUp: true } } : c);
       setDealerHand(dFlipped);
       Sound.cardFlip();
       await sleep(500);
@@ -107,21 +113,26 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
   const stand = async () => {
     if (phase !== 'player') return;
     setPhase('dealer');
+    // Use refs to get the latest hands (avoids stale closure after hit())
+    const currentDealer = dealerHandRef.current;
+    const currentPlayer = playerHandRef.current;
+    const currentDeck = deckRef.current;
     // Flip dealer's hole card
-    const dFlipped = dealerHand.map((c, i) => i === 1 ? { ...c, card: { ...c.card, faceUp: true } } : c);
+    const dFlipped = currentDealer.map((c, i) => i === 1 ? { ...c, card: { ...c.card, faceUp: true } } : c);
     setDealerHand(dFlipped);
     Sound.cardFlip();
     await sleep(700);
     let cur = dFlipped;
     while (handValue(cur.map(c => c.card)).total < 17) {
       await sleep(700);
-      const card = { ...deck[deckIndexRef.current++], faceUp: true };
+      const card = { ...currentDeck[deckIndexRef.current++], faceUp: true };
       Sound.cardDeal();
       cur = [...cur, { card, id: nextCardId() }];
       setDealerHand([...cur]);
     }
     await sleep(500);
-    const playerTotal = handValue(playerHand.map(c => c.card)).total;
+    // Use the ref-based player hand, not the stale state
+    const playerTotal = handValue(currentPlayer.map(c => c.card)).total;
     const dealerTotal = handValue(cur.map(c => c.card)).total;
     if (dealerTotal > 21 || playerTotal > dealerTotal) { finishHand('win', bet + bet * bonusMultiplier); }
     else if (playerTotal < dealerTotal) { finishHand('lose', 0); }
@@ -130,20 +141,20 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
 
   const doubleDown = async () => {
     if (phase !== 'player') return;
-    if (playerHand.length !== 2) return;
+    if (playerHandRef.current.length !== 2) return;
     if (balanceRef.current < bet) { Sound.error(); return; }
     Sound.bet();
     onBalanceChange(balanceRef.current - bet);
     const doubledBet = bet * 2;
     setBet(doubledBet);
     Sound.cardDeal();
-    const card = { ...deck[deckIndexRef.current++], faceUp: true };
-    const newHand = [...playerHand, { card, id: nextCardId() }];
+    const card = { ...deckRef.current[deckIndexRef.current++], faceUp: true };
+    const newHand = [...playerHandRef.current, { card, id: nextCardId() }];
     setPlayerHand(newHand);
     await sleep(500);
     const v = handValue(newHand.map(c => c.card)).total;
     if (v > 21) {
-      const dFlipped = dealerHand.map((c, i) => i === 1 ? { ...c, card: { ...c.card, faceUp: true } } : c);
+      const dFlipped = dealerHandRef.current.map((c, i) => i === 1 ? { ...c, card: { ...c.card, faceUp: true } } : c);
       setDealerHand(dFlipped);
       Sound.cardFlip();
       await sleep(500);
@@ -151,14 +162,14 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
       setBet(bet);
     } else {
       setPhase('dealer');
-      const dFlipped = dealerHand.map((c, i) => i === 1 ? { ...c, card: { ...c.card, faceUp: true } } : c);
+      const dFlipped = dealerHandRef.current.map((c, i) => i === 1 ? { ...c, card: { ...c.card, faceUp: true } } : c);
       setDealerHand(dFlipped);
       Sound.cardFlip();
       await sleep(700);
       let cur = dFlipped;
       while (handValue(cur.map(c => c.card)).total < 17) {
         await sleep(700);
-        const c = { ...deck[deckIndexRef.current++], faceUp: true };
+        const c = { ...deckRef.current[deckIndexRef.current++], faceUp: true };
         Sound.cardDeal();
         cur = [...cur, { card: c, id: nextCardId() }];
         setDealerHand([...cur]);

@@ -71,7 +71,7 @@ export function FinalVoteScreen({ state, self, isHost, onVote, onAdvance, onLeav
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 gap-4 max-w-2xl w-full">
+        <div className="grid grid-cols-2 gap-4 max-w-2xl w-full items-stretch">
           {state.finalVoteOptions.map((g, i) => {
             const meta = GAME_META[g];
             const isPicked = selected === g;
@@ -86,7 +86,7 @@ export function FinalVoteScreen({ state, self, isHost, onVote, onAdvance, onLeav
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.99 }}
                 onClick={() => handleVote(g)}
-                className="panel p-8 text-center transition-colors relative overflow-hidden"
+                className="panel p-8 text-center transition-colors relative overflow-hidden flex flex-col h-full"
                 style={{
                   borderColor: isPicked ? 'var(--sf-accent)' : 'var(--sf-border)',
                   backgroundColor: isPicked ? 'var(--sf-border)' : 'var(--sf-bg-secondary)',
@@ -96,10 +96,10 @@ export function FinalVoteScreen({ state, self, isHost, onVote, onAdvance, onLeav
                 <h3 className="font-display text-2xl mb-2" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>
                   {meta.label}
                 </h3>
-                <p className="text-sm mb-3" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+                <p className="text-sm mb-3 flex-1" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
                   {meta.description}
                 </p>
-                <div className="h-0.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--sf-bg)' }}>
+                <div className="h-0.5 rounded-full overflow-hidden mt-auto" style={{ backgroundColor: 'var(--sf-bg)' }}>
                   <motion.div
                     className="h-full"
                     style={{ backgroundColor: 'var(--sf-accent)' }}

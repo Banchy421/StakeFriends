@@ -66,7 +66,7 @@ export function GameSelectScreen({ state, self, isHost, onSelect, onAdvance, onL
         </button>
       </header>
 
-      <div className="flex-1 grid md:grid-cols-3 gap-3 items-center max-w-4xl mx-auto w-full">
+      <div className="flex-1 grid md:grid-cols-3 gap-3 items-stretch max-w-4xl mx-auto w-full">
         {state.availableGames.map((g, i) => {
           const meta = GAME_META[g];
           const isPicked = selected === g;
@@ -80,7 +80,7 @@ export function GameSelectScreen({ state, self, isHost, onSelect, onAdvance, onL
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.99 }}
               onClick={() => handlePick(g)}
-              className="panel p-6 text-left transition-colors"
+              className="panel p-6 text-left transition-colors flex flex-col h-full"
               style={{
                 borderColor: isPicked ? 'var(--sf-accent)' : 'var(--sf-border)',
                 backgroundColor: isPicked ? 'var(--sf-border)' : 'var(--sf-bg-secondary)',
@@ -90,7 +90,7 @@ export function GameSelectScreen({ state, self, isHost, onSelect, onAdvance, onL
               <h3 className="font-display text-xl mb-1.5" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>
                 {meta.label}
               </h3>
-              <p className="text-sm mb-4" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+              <p className="text-sm mb-4 flex-1" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
                 {meta.description}
               </p>
               {pickerCount > 0 && (
@@ -100,7 +100,7 @@ export function GameSelectScreen({ state, self, isHost, onSelect, onAdvance, onL
               )}
               {isPicked && (
                 <div
-                  className="mt-3 inline-block px-2.5 py-0.5 rounded text-xs"
+                  className="mt-3 inline-block px-2.5 py-0.5 rounded text-xs self-start"
                   style={{ backgroundColor: 'var(--sf-accent)', color: 'var(--sf-text)', fontWeight: 400 }}
                 >
                   Your pick
