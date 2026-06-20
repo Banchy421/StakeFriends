@@ -40,7 +40,7 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
     if (timeRemaining <= 3) { Sound.error(); return; }
     if (spinState === 'spinning') return;
 
-    // Clear any leftover intervals from a previous spin (safety net)
+    // Clear any leftover intervals from a previous spin
     stopAllIntervals();
 
     Sound.bet();
@@ -58,8 +58,7 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
       SLOTS_SYMBOLS[Math.floor(Math.random() * SLOTS_SYMBOLS.length)],
     ];
 
-    // Start spinning animation for each reel — use a FRESH array so we don't
-    // accumulate stale interval IDs across multiple spins.
+    // Start spinning animation for each reel — fresh array of interval IDs
     const intervals: ReturnType<typeof setInterval>[] = [];
     for (let i = 0; i < 3; i++) {
       const id = setInterval(() => {
@@ -119,32 +118,27 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
 
       <BetControls balance={balance} bet={bet} setBet={setBet} disabled={spinState === 'spinning'} />
 
-      {/* Reels */}
+      {/* Reels — using CSS classes for spinning animation instead of Framer Motion's
+          repeat: Infinity, which doesn't stop cleanly on the 2nd+ spin. */}
       <div className="panel p-5">
         <div className="flex justify-center gap-3 mb-3">
-          {reels.map((sym, i) => (
-            <motion.div
-              key={i}
-              animate={
-                reelStates[i] === 'spinning'
-                  ? { y: [0, -10, 0, 10, 0] }
-                  : { scale: reelStates[i] === 'stopped' ? [1.2, 1] : 1 }
-              }
-              transition={
-                reelStates[i] === 'spinning'
-                  ? { duration: 0.15, repeat: Infinity }
-                  : { duration: 0.3, type: 'spring' }
-              }
-              className={cn(
-                'w-24 h-32 md:w-28 md:h-36 rounded-md flex items-center justify-center text-6xl border-2',
-                reelStates[i] === 'spinning' && 'bg-[#0a0a0a] border-[#2a2a2a] blur-[1px]',
-                reelStates[i] === 'stopped' && 'bg-gold bg-opacity-10 border-gold glow-gold',
-                reelStates[i] === 'idle' && 'bg-[#0a0a0a] border-[#2a2a2a]',
-              )}
-            >
-              {sym}
-            </motion.div>
-          ))}
+          {reels.map((sym, i) => {
+            const isSpinning = reelStates[i] === 'spinning';
+            const isStopped = reelStates[i] === 'stopped';
+            return (
+              <div
+                key={i}
+                className={cn(
+                  'w-24 h-32 md:w-28 md:h-36 rounded-md flex items-center justify-center text-6xl border-2 transition-colors duration-150',
+                  isSpinning && 'reel-spinning bg-[#0a0a0a] border-[#2a2a2a] blur-[1px]',
+                  isStopped && 'bg-gold bg-opacity-10 border-gold glow-gold',
+                  !isSpinning && !isStopped && 'bg-[#0a0a0a] border-[#2a2a2a]',
+                )}
+              >
+                {sym}
+              </div>
+            );
+          })}
         </div>
 
         {/* Paytable hint */}

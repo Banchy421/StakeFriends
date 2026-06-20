@@ -301,13 +301,22 @@ export function collectRoundEndBalances(state: GameState, balances: Record<strin
   };
 }
 
-/** Skip the current round. No balance changes, but still show the 10s round-timeout
- *  pause (winner announcement / bailout offer) before advancing to the next round. */
+/** Skip the current round. Money won/lost DURING the round (before the skip) is
+ *  preserved — we collect the latest live balances into state.players. But the skip
+ *  itself doesn't change any money (no bailout penalty, no round-end collection).
+ *  Still show the 10s round-timeout pause (winner announcement / bailout offer). */
 export function skipRound(state: GameState): GameState {
-  // Go to round-timeout. startRoundTimeout determines the current leader as "winner"
-  // and offers bailout to anyone at €0. After 10s the host auto-advances via
-  // advanceAfterTimeout → startGameSelect (which increments the round).
-  return startRoundTimeout({ ...state, skipVotes: [] });
+  // Collect the latest live balances so money won/lost during the round is preserved.
+  // Without this, state.players[pid].balance would still be the round-start value,
+  // and the next round would start with the old balance (looks like a "reset to 100").
+  const players = { ...state.players };
+  for (const pid of Object.keys(players)) {
+    const liveBalance = state.lastBalanceUpdate[pid];
+    if (liveBalance !== undefined && !players[pid].isEliminated) {
+      players[pid] = { ...players[pid], balance: liveBalance };
+    }
+  }
+  return startRoundTimeout({ ...state, players, skipVotes: [] });
 }
 
 /** Advance from round-timeout to next game-select or to results if last round. */

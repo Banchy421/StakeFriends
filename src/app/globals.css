@@ -229,6 +229,18 @@
   transform-style: preserve-3d;
   position: relative;
 }
+
+/* Slots reel spinning animation — pure CSS so it stops instantly when the class is removed */
+@keyframes reel-bounce {
+  0% { transform: translateY(0); }
+  25% { transform: translateY(-8px); }
+  50% { transform: translateY(0); }
+  75% { transform: translateY(8px); }
+  100% { transform: translateY(0); }
+}
+.reel-spinning {
+  animation: reel-bounce 0.15s infinite;
+}
 .coin-face {
   position: absolute;
   inset: 0;

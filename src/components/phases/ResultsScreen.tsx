@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { GameState, Player } from '@/lib/types';
 import { Sound } from '@/lib/sounds';
@@ -16,43 +16,47 @@ interface ResultsScreenProps {
 }
 
 export function ResultsScreen({ state, self, isHost, onPlayAgain, onLeave }: ResultsScreenProps) {
+  // ranked is sorted descending by balance: [1st, 2nd, 3rd, ...]
   const ranked = useMemo(
     () => Object.values(state.players).sort((a, b) => b.balance - a.balance),
     [state.players],
   );
+  // revealOrder is reversed: [last, ..., 2nd, 1st] — reveal last place first, winner last
+  const revealOrder = useMemo(() => [...ranked].reverse(), [ranked]);
   const [revealedCount, setRevealedCount] = useState(0);
   const [showFinal, setShowFinal] = useState(false);
-  const lastRevealCount = useRef(0);
 
-  // Reveal one by one, bottom to top, with 2s delay
+  // Reveal one by one, starting from last place, with 2s delay between each.
+  // The winner (1st place) is revealed LAST to build tension.
+  // Pre-schedule all reveals as independent timeouts so they survive re-renders.
   useEffect(() => {
-    if (ranked.length === 0) return;
-    // Start from last place
-    let idx = 0;
-    const reveal = () => {
-      if (idx >= ranked.length) {
-        setShowFinal(true);
-        Sound.fanfareBig();
-        return;
-      }
-      setRevealedCount(idx + 1);
-      const p = ranked[idx];
-      if (idx === ranked.length - 1) {
-        // Winner!
-        Sound.fanfareBig();
-      } else if (idx === 0) {
-        Sound.lose();
-      } else {
-        Sound.reveal();
-      }
-      idx++;
-      setTimeout(reveal, 2000);
-    };
-    const startId = setTimeout(reveal, 800);
-    return () => clearTimeout(startId);
-  }, [ranked]);
+    if (revealOrder.length === 0) return;
+    setRevealedCount(0);
+    setShowFinal(false);
 
-  const revealedPlayers = ranked.slice(0, revealedCount);
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    for (let i = 0; i < revealOrder.length; i++) {
+      const delay = 800 + i * 2000;
+      timeouts.push(setTimeout(() => {
+        setRevealedCount(i + 1);
+        const isLastPlace = i === 0;
+        const isWinner = i === revealOrder.length - 1;
+        if (isWinner) Sound.fanfareBig();
+        else if (isLastPlace) Sound.lose();
+        else Sound.reveal();
+      }, delay));
+    }
+    // Show final winner spotlight after all reveals + 2s
+    timeouts.push(setTimeout(() => {
+      setShowFinal(true);
+      Sound.fanfareBig();
+    }, 800 + revealOrder.length * 2000));
+
+    return () => timeouts.forEach(clearTimeout);
+  }, [revealOrder]);
+
+  // Players revealed so far, in reveal order (last place → first place)
+  const revealedPlayers = revealOrder.slice(0, revealedCount);
   const winner = ranked[0];
 
   return (
@@ -67,9 +71,11 @@ export function ResultsScreen({ state, self, isHost, onPlayAgain, onLeave }: Res
         {!showFinal ? (
           <div className="w-full space-y-3">
             <AnimatePresence mode="popLayout">
-              {revealedPlayers.slice().reverse().map((p, idxFromBottom) => {
-                const realRank = ranked.length - 1 - idxFromBottom;
+              {revealedPlayers.map((p, idx) => {
+                // Find this player's actual rank in the ranked array
+                const realRank = ranked.findIndex((rp) => rp.id === p.id);
                 const isWinner = realRank === 0;
+                const isLastPlace = realRank === ranked.length - 1;
                 const isSelf = p.id === self?.id;
                 return (
                   <motion.div
@@ -96,7 +102,7 @@ export function ResultsScreen({ state, self, isHost, onPlayAgain, onLeave }: Res
                         {p.name} {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {isWinner ? 'CHAMPION' : realRank === ranked.length - 1 ? 'Last Place' : `Rank ${realRank + 1}`}
+                        {isWinner ? 'CHAMPION' : isLastPlace ? 'Last Place' : `Rank ${realRank + 1}`}
                       </div>
                     </div>
                     <div className={cn(
@@ -109,7 +115,7 @@ export function ResultsScreen({ state, self, isHost, onPlayAgain, onLeave }: Res
                 );
               })}
             </AnimatePresence>
-            {revealedCount < ranked.length && (
+            {revealedCount < revealOrder.length && (
               <div className="text-center text-muted-foreground text-sm pt-4">
                 Revealing rank #{ranked.length - revealedCount}...
               </div>
@@ -136,7 +142,7 @@ export function ResultsScreen({ state, self, isHost, onPlayAgain, onLeave }: Res
               <div className="font-mono text-2xl text-win">{formatMoney(winner?.balance ?? 0)}</div>
             </motion.div>
 
-            {/* Full leaderboard */}
+            {/* Full leaderboard — sorted 1st to last */}
             <div className="panel p-3 mb-6 text-left">
               <div className="text-xs text-muted-foreground uppercase tracking-widest mb-2 text-center">
                 Final Standings
