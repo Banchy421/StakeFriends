@@ -85,7 +85,7 @@ export function startGameSelect(state: GameState): GameState {
     skipVotes: [],
     roundWinnerId: null,
     bailoutPending: [],
-    bailoutChoices: [],
+    bailoutChoices: {},
     roundSeed: randomSeed(),
     crashPoints: [],
     kenoDraws: [],
@@ -170,11 +170,17 @@ export function resolveFinalVote(state: GameState, rng: () => number = Math.rand
     }
   }
   const finalGame = winners[Math.floor(rng() * winners.length)];
-  // transition to game-select-like for personal picks (10s)
+  // The losing option is the other game from finalVoteOptions
+  const losingGame = state.finalVoteOptions.find((g) => g !== finalGame) ?? finalGame;
+  // transition to game-select-like for personal picks (10s).
+  // Players can pick either the winning game or the losing game (their personal choice).
+  const pickOptions: GameName[] = finalGame === losingGame
+    ? [finalGame]
+    : [finalGame, losingGame];
   return {
     ...state,
     phase: 'game-select',
-    availableGames: [finalGame, winners.length > 1 ? winners[1] : state.finalVoteOptions[0]],
+    availableGames: pickOptions,
     finalVoteOptions: [finalGame],
     timeRemaining: 10,
     roundDuration: 10,
@@ -268,16 +274,21 @@ export function collectRoundEndBalances(state: GameState, balances: Record<strin
   };
 }
 
-/** Skip the current round entirely. */
+/** Skip the current round entirely. No balance changes; advance to next round. */
 export function skipRound(state: GameState): GameState {
-  // No balance changes; advance as if round ended but skip timeout if non-final.
-  return {
-    ...state,
-    phase: state.currentRound >= state.totalRounds ? 'results' : 'game-select',
-    skipVotes: [],
-    timeRemaining: 0,
-    roundDuration: 0,
-  };
+  // If we're already on the last round, go to results
+  if (state.currentRound >= state.totalRounds) {
+    return {
+      ...state,
+      phase: 'results' as Phase,
+      skipVotes: [],
+      timeRemaining: 0,
+      roundDuration: 0,
+    };
+  }
+  // Otherwise, advance to the next round's game-select (or final-vote if last round).
+  // startGameSelect increments currentRound and handles the final-round vote transition.
+  return startGameSelect({ ...state, skipVotes: [] });
 }
 
 /** Advance from round-timeout to next game-select or to results if last round. */

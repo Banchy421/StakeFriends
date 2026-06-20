@@ -27,6 +27,7 @@ export interface UseGameStateApi {
   selfId: string;
   self: Player | null;
   roomCode: string;
+  connectionStatus: 'idle' | 'connecting' | 'connected';
   // actions
   createRoom: (player: Player) => string;
   joinRoomByCode: (player: Player, code: string) => void;
@@ -65,10 +66,13 @@ export function useGameState(): UseGameStateApi {
   const [state, setState] = useState<GameState | null>(null);
   const [roomCode, setRoomCode] = useState<string>('');
   const [isHost, setIsHost] = useState(false);
+  const [selfId, setSelfId] = useState<string>('');
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'connecting' | 'connected'>('idle');
   const p2pRef = useRef<P2PApi | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const selfRef = useRef<Player | null>(null);
   const liveBalanceRef = useRef<Record<string, number>>({});
+  const joinRetryRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => { stateRef.current = state; }, [state]);
 
@@ -209,9 +213,17 @@ export function useGameState(): UseGameStateApi {
     const code = generateRoomCode();
     setRoomCode(code);
     setIsHost(true);
+    setSelfId(player.id);
+    setConnectionStatus('connecting');
     selfRef.current = player;
     // dynamic import to avoid SSR
-    import('@/lib/p2p').then(({ joinGameRoom }) => {
+    import('@/lib/p2p').then(({ joinGameRoom, selfId: p2pSelfId }) => {
+      // Use the actual trystero selfId, not the placeholder
+      const actualSelfId = p2pSelfId;
+      setSelfId(actualSelfId);
+      const playerWithCorrectId: Player = { ...player, id: actualSelfId };
+      selfRef.current = playerWithCorrectId;
+
       const p2p = joinGameRoom(code) as unknown as P2PApi;
       p2pRef.current = p2p;
       p2p.onState(applyRemoteState);
@@ -219,6 +231,7 @@ export function useGameState(): UseGameStateApi {
       p2p.onHostCommand(handleHostCommand);
       p2p.onPeerJoin((peerId) => {
         Sound.join();
+        setConnectionStatus('connected');
         // Host: send current state to the new peer so they can sync
         const cur = stateRef.current;
         if (cur) {
@@ -232,8 +245,9 @@ export function useGameState(): UseGameStateApi {
           void broadcast(removePlayer(cur, peerId));
         }
       });
-      const initial = makeInitialState(player, 'standard');
+      const initial = makeInitialState(playerWithCorrectId, 'standard');
       void broadcast(initial);
+      setConnectionStatus('connected'); // host is immediately "connected"
     });
     return code;
   }, [applyRemoteState, handleAction, handleHostCommand, broadcast]);
@@ -242,36 +256,83 @@ export function useGameState(): UseGameStateApi {
   const joinRoomByCode = useCallback((player: Player, code: string) => {
     setRoomCode(code);
     setIsHost(false);
+    setConnectionStatus('connecting');
     selfRef.current = player;
-    import('@/lib/p2p').then(({ joinGameRoom }) => {
+    import('@/lib/p2p').then(({ joinGameRoom, selfId: p2pSelfId }) => {
+      const actualSelfId = p2pSelfId;
+      setSelfId(actualSelfId);
+      selfRef.current = { ...player, id: actualSelfId };
+
       const p2p = joinGameRoom(code) as unknown as P2PApi;
       p2pRef.current = p2p;
-      p2p.onState(applyRemoteState);
+      p2p.onState((remote) => {
+        // Once we receive state from the host, we're connected
+        setConnectionStatus('connected');
+        applyRemoteState(remote);
+      });
       p2p.onAction(handleAction);
       p2p.onHostCommand(handleHostCommand);
       p2p.onPeerJoin(() => {
-        // Send our join info to host (and any other peers; only host will act on it)
+        // Send our join info to host whenever a peer (the host) joins
         void p2p.sendAction({ type: 'join', name: player.name, avatar: player.avatar });
       });
       p2p.onPeerLeave(() => {
         Sound.leave();
       });
-      // Also send immediately in case host already exists
-      setTimeout(() => {
+
+      // Retry sending the join action every 1.5s for up to 30s, in case the
+      // host isn't connected yet on the first attempt. Stop once we appear
+      // in the player list (state.players contains our id).
+      let attempts = 0;
+      const maxAttempts = 20;
+      const sendJoin = () => {
+        const cur = stateRef.current;
+        if (cur && cur.players[actualSelfId]) {
+          // We're in the player list — stop retrying
+          if (joinRetryRef.current) {
+            clearInterval(joinRetryRef.current);
+            joinRetryRef.current = null;
+          }
+          return;
+        }
         void p2p.sendAction({ type: 'join', name: player.name, avatar: player.avatar });
-      }, 500);
+        attempts++;
+        if (attempts >= maxAttempts && joinRetryRef.current) {
+          clearInterval(joinRetryRef.current);
+          joinRetryRef.current = null;
+        }
+      };
+      // Send immediately, then retry periodically
+      sendJoin();
+      joinRetryRef.current = setInterval(sendJoin, 1500);
     });
   }, [applyRemoteState, handleAction, handleHostCommand]);
+
+  // Clean up the join retry interval on unmount
+  useEffect(() => {
+    return () => {
+      if (joinRetryRef.current) {
+        clearInterval(joinRetryRef.current);
+        joinRetryRef.current = null;
+      }
+    };
+  }, []);
 
   // Add a join mechanism: guests send player info via a custom action
   // We'll extend the action dispatch above. To keep types clean, we add a 'join' action type at runtime.
 
   const leave = useCallback(() => {
+    if (joinRetryRef.current) {
+      clearInterval(joinRetryRef.current);
+      joinRetryRef.current = null;
+    }
     p2pRef.current?.leave();
     p2pRef.current = null;
     setState(null);
     setRoomCode('');
     setIsHost(false);
+    setSelfId('');
+    setConnectionStatus('idle');
   }, []);
 
   // HOST ACTIONS
@@ -336,37 +397,50 @@ export function useGameState(): UseGameStateApi {
     void broadcast(resetForPlayAgain(cur));
   }, [isHost, broadcast]);
 
-  // PLAYER ACTIONS (routed to host)
+  // PLAYER ACTIONS
+  // If we're the host, process the action locally via handleAction (since sendAction
+  // only delivers to peers, not to self). If we're a guest, send to the host.
+  const dispatchPlayerAction = useCallback((action: PlayerAction) => {
+    const p2p = p2pRef.current;
+    if (!p2p) return;
+    if (isHost && selfRef.current) {
+      // Host processes their own action locally
+      void handleAction(action, selfRef.current.id);
+    } else {
+      // Guest sends to host (and all peers; only host acts on it)
+      void p2p.sendAction(action);
+    }
+  }, [isHost, handleAction]);
+
   const selectGame = useCallback((game: GameName) => {
-    p2pRef.current?.sendAction({ type: 'select-game', game });
-  }, []);
+    dispatchPlayerAction({ type: 'select-game', game });
+  }, [dispatchPlayerAction]);
 
   const finalVote = useCallback((game: GameName) => {
-    p2pRef.current?.sendAction({ type: 'final-vote', game });
-  }, []);
+    dispatchPlayerAction({ type: 'final-vote', game });
+  }, [dispatchPlayerAction]);
 
   const skipVote = useCallback(() => {
-    p2pRef.current?.sendAction({ type: 'skip-vote' });
-  }, []);
+    dispatchPlayerAction({ type: 'skip-vote' });
+  }, [dispatchPlayerAction]);
 
   const unskipVote = useCallback(() => {
-    p2pRef.current?.sendAction({ type: 'skip-unvote' });
-  }, []);
+    dispatchPlayerAction({ type: 'skip-unvote' });
+  }, [dispatchPlayerAction]);
 
   const sendLiveBalance = useCallback((balance: number) => {
-    p2pRef.current?.sendAction({ type: 'live-balance', balance });
-  }, []);
+    dispatchPlayerAction({ type: 'live-balance', balance });
+  }, [dispatchPlayerAction]);
 
   const sendRoundEndBalance = useCallback((balance: number) => {
-    p2pRef.current?.sendAction({ type: 'round-end-balance', balance });
-  }, []);
+    dispatchPlayerAction({ type: 'round-end-balance', balance });
+  }, [dispatchPlayerAction]);
 
   const chooseBailout = useCallback((amount: number) => {
-    p2pRef.current?.sendAction({ type: 'bailout-choice', amount });
-  }, []);
+    dispatchPlayerAction({ type: 'bailout-choice', amount });
+  }, [dispatchPlayerAction]);
 
   // Detect self in state
-  const selfId = p2pRef.current?.selfId ?? '';
   const self = state && selfId ? state.players[selfId] ?? null : null;
 
   // When state arrives and we don't have our self in it, send a synthetic 'join' action via live-balance.
@@ -380,6 +454,7 @@ export function useGameState(): UseGameStateApi {
     selfId,
     self,
     roomCode,
+    connectionStatus,
     createRoom,
     joinRoomByCode,
     leave,

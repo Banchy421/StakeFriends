@@ -104,14 +104,30 @@ export default function Home() {
     );
   }
 
-  if (!api.state || Object.keys(api.state.players).length === 0) {
+  if (!api.state || Object.keys(api.state.players).length === 0 || api.connectionStatus === 'connecting') {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="font-display text-2xl text-gold mb-2">Connecting...</div>
-          <div className="text-sm text-muted-foreground">
-            {mode === 'solo' ? 'Starting solo session' : 'Establishing P2P connection'}
+        <div className="text-center max-w-sm">
+          <div className="mb-4 inline-block">
+            <div className="w-12 h-12 rounded-full border-4 border-[#2a2a2a] border-t-gold animate-spin mx-auto" />
           </div>
+          <div className="font-display text-2xl text-gold mb-2">
+            {api.connectionStatus === 'connecting' ? 'Connecting...' : 'Loading...'}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {mode === 'solo'
+              ? 'Starting solo session'
+              : api.connectionStatus === 'connecting'
+                ? 'Establishing P2P connection via WebRTC. This can take 5–15 seconds.'
+                : 'Loading game state'}
+          </div>
+          {mode === 'multiplayer' && api.connectionStatus === 'connecting' && (
+            <div className="mt-3 text-xs text-muted-foreground">
+              <p>· Connecting to tracker servers</p>
+              <p>· Establishing WebRTC data channel</p>
+              <p>· Waiting for host response</p>
+            </div>
+          )}
           <button onClick={handleLeave} className="mt-4 text-xs text-muted-foreground hover:text-lose">
             ← Cancel
           </button>

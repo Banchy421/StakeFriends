@@ -219,10 +219,10 @@ export function useLocalGameState(): UseLocalGameStateApi {
       ...cur,
       skipVotes: [...cur.skipVotes, selfRef.current.id],
     };
-    // Also auto-vote bots
+    // Also auto-vote bots (50% chance each, so player can usually trigger a skip)
     for (const pid of Object.keys(cur.players)) {
       if (pid.startsWith('bot-') && !next.skipVotes.includes(pid)) {
-        if (Math.random() < 0.3) {
+        if (Math.random() < 0.5) {
           next.skipVotes = [...next.skipVotes, pid];
         }
       }
