@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player } from '@/lib/types';
-import { PlayerCard } from '@/components/lobby/PlayerCard';
 import { formatMoney } from '@/lib/utils-casino';
 import { cn } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
@@ -32,31 +31,32 @@ export function Leaderboard({ players, selfId, liveBalances = {}, collapsed = fa
     }
     if (Object.keys(newFlash).length > 0) {
       const id = setTimeout(() => setFlashState({}), 600);
-      // Defer the state update to avoid cascading renders
       Promise.resolve().then(() => setFlashState(newFlash));
       return () => clearTimeout(id);
     }
   }, [ranked.map((p) => p.displayBalance).join(',')]);
 
-  const leader = ranked[0];
-
   if (collapsed) {
     return (
-      <div className="panel p-2 mb-3 flex items-center gap-2 overflow-x-auto casino-scroll">
+      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto casino-scroll">
         {ranked.slice(0, 6).map((p, i) => (
           <div
             key={p.id}
             className={cn(
-              'flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#0a0a0a] flex-shrink-0',
-              p.id === selfId && 'border border-gold',
+              'flex items-center gap-1.5 px-2 py-1 rounded-md flex-shrink-0',
               flashState[p.id] === 'up' && 'flash-win',
               flashState[p.id] === 'down' && 'flash-lose',
             )}
+            style={{
+              backgroundColor: p.id === selfId ? 'var(--sf-border)' : 'var(--sf-bg-secondary)',
+              border: '0.5px solid var(--sf-border)',
+            }}
           >
-            <span className="text-xs text-muted-foreground">#{i + 1}</span>
-            <span className="text-base">{p.avatar}</span>
-            <span className="text-xs font-mono text-gold">{formatMoney(p.displayBalance)}</span>
-            {i === 0 && <span className="text-xs">👑</span>}
+            <span className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>{i + 1}</span>
+            <span className="text-sm">{p.avatar}</span>
+            <span className="text-xs font-mono" style={{ color: 'var(--sf-text)', fontWeight: 400 }}>
+              {formatMoney(p.displayBalance)}
+            </span>
           </div>
         ))}
       </div>
@@ -65,46 +65,49 @@ export function Leaderboard({ players, selfId, liveBalances = {}, collapsed = fa
 
   return (
     <div className="panel p-3 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-display text-base text-gold flex items-center gap-1">
-          <span>👑</span> Leaderboard
-        </h3>
-      </div>
-      <div className="space-y-1.5 overflow-y-auto casino-scroll flex-1">
+      <h3 className="text-xs mb-3" style={{ color: 'var(--sf-text-muted)', fontWeight: 500 }}>
+        Leaderboard
+      </h3>
+      <div className="space-y-1 overflow-y-auto casino-scroll flex-1">
         <AnimatePresence>
           {ranked.map((p, i) => (
             <div
               key={p.id}
               className={cn(
-                'flex items-center gap-2 p-2 rounded-md bg-[#0a0a0a] border border-transparent',
-                p.id === selfId && 'border-gold',
-                i === 0 && 'bg-gold bg-opacity-10',
+                'flex items-center gap-2 p-2 rounded-md',
                 flashState[p.id] === 'up' && 'flash-win',
                 flashState[p.id] === 'down' && 'flash-lose',
               )}
+              style={{
+                backgroundColor: p.id === selfId ? 'var(--sf-border)' : 'transparent',
+              }}
             >
-              <div className={cn(
-                'w-6 text-center font-display font-bold text-sm',
-                i === 0 ? 'text-gold' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-amber-600' : 'text-muted-foreground',
-              )}>
+              <div className="w-4 text-center text-xs" style={{
+                color: 'var(--sf-text-muted)',
+                fontWeight: 400,
+              }}>
                 {i + 1}
               </div>
-              <div className="text-lg">{p.avatar}</div>
+              <div className="text-base">{p.avatar}</div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm truncate">
-                  {p.name} {p.id === selfId && <span className="text-xs text-muted-foreground">(you)</span>}
+                <div className="text-sm truncate" style={{ color: 'var(--sf-text)', fontWeight: 400 }}>
+                  {p.name} {p.id === selfId && <span className="text-xs" style={{ color: 'var(--sf-text-muted)' }}>(you)</span>}
                 </div>
                 {p.roundBonus > 1 && (
-                  <div className="text-[10px] text-gold">+{Math.round((p.roundBonus - 1) * 100)}% bonus</div>
+                  <div className="text-[10px]" style={{ color: 'var(--sf-accent)', fontWeight: 400 }}>
+                    +{Math.round((p.roundBonus - 1) * 100)}% bonus
+                  </div>
                 )}
                 {p.roundBonus < 1 && p.bailoutUsed && (
-                  <div className="text-[10px] text-lose">−10% bailout penalty</div>
+                  <div className="text-[10px]" style={{ color: 'var(--sf-lose)', fontWeight: 400 }}>
+                    −10% bailout penalty
+                  </div>
                 )}
               </div>
-              <div className={cn(
-                'font-mono text-sm',
-                p.displayBalance > 100 ? 'text-win' : p.displayBalance < 100 ? 'text-lose' : 'text-muted-foreground',
-              )}>
+              <div className="font-mono text-sm" style={{
+                color: p.displayBalance > 100 ? 'var(--sf-win)' : p.displayBalance < 100 ? 'var(--sf-lose)' : 'var(--sf-text-muted)',
+                fontWeight: 400,
+              }}>
                 {formatMoney(p.displayBalance)}
               </div>
             </div>

@@ -177,11 +177,19 @@ export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemainin
       setBalls([...newBalls]);
 
       // Draw
-      ctx.fillStyle = '#0a0a0a';
+      const styles = getComputedStyle(document.documentElement);
+      const bgColor = styles.getPropertyValue('--sf-bg-secondary').trim() || '#EFE9E0';
+      const accentColor = styles.getPropertyValue('--sf-accent').trim() || '#B8A898';
+      const textColor = styles.getPropertyValue('--sf-text').trim() || '#2A2724';
+      const winColor = styles.getPropertyValue('--sf-win').trim() || '#6B8E5A';
+      const loseColor = styles.getPropertyValue('--sf-lose').trim() || '#B85C5C';
+      const accentRgb = styles.getPropertyValue('--sf-accent-rgb').trim() || '184, 168, 152';
+
+      ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
       // Draw pegs
-      ctx.fillStyle = '#C9A84C';
+      ctx.fillStyle = accentColor;
       for (const peg of pegsRef.current) {
         ctx.beginPath();
         ctx.arc(peg.position.x, peg.position.y, 4, 0, Math.PI * 2);
@@ -194,14 +202,14 @@ export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemainin
         const mult = PLINKO_BUCKETS[i];
         const x = i * bucketW;
         const isLanded = landedBucket === i || lastWinBucket === i;
-        const color = mult >= 5 ? '#E53E3E' : mult >= 2 ? '#C9A84C' : mult >= 1 ? '#38A169' : '#666';
-        ctx.fillStyle = isLanded ? color : '#1a1a1a';
+        const color = mult >= 5 ? loseColor : mult >= 2 ? accentColor : mult >= 1 ? winColor : '#7D756C';
+        ctx.fillStyle = isLanded ? color : bgColor;
         ctx.fillRect(x + 2, HEIGHT - 30, bucketW - 4, 28);
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 0.5;
         ctx.strokeRect(x + 2, HEIGHT - 30, bucketW - 4, 28);
-        ctx.fillStyle = isLanded ? '#fff' : color;
-        ctx.font = 'bold 12px Inter, sans-serif';
+        ctx.fillStyle = isLanded ? textColor : color;
+        ctx.font = '500 12px DM Sans, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(`${mult}×`, x + bucketW / 2, HEIGHT - 12);
       }
@@ -211,19 +219,19 @@ export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemainin
         // Trail
         for (let i = 0; i < ball.trail.length; i++) {
           const t = ball.trail[i];
-          const alpha = (i / ball.trail.length) * 0.4;
-          ctx.fillStyle = `rgba(201, 168, 76, ${alpha})`;
+          const alpha = (i / ball.trail.length) * 0.3;
+          ctx.fillStyle = `rgba(${accentRgb}, ${alpha})`;
           ctx.beginPath();
           ctx.arc(t.x, t.y, 3 * (i / ball.trail.length), 0, Math.PI * 2);
           ctx.fill();
         }
         // Ball
-        ctx.fillStyle = '#fff5cc';
+        ctx.fillStyle = textColor;
         ctx.beginPath();
         ctx.arc(ball.x, ball.y, 6, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#C9A84C';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 1.5;
         ctx.stroke();
       }
 
@@ -265,8 +273,8 @@ export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemainin
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-4">
       <div className="text-center">
-        <h2 className="font-display text-3xl text-gold mb-1">🔵 Plinko</h2>
-        <p className="text-xs text-muted-foreground">Drop the ball. Watch physics decide your fate.</p>
+        <h2 className="font-display text-2xl mb-1" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>Plinko</h2>
+        <p className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Drop the ball. Watch physics decide your fate.</p>
       </div>
 
       <BetControls balance={balance} bet={bet} setBet={setBet} presets={[5, 10, 25, 50]} />
@@ -284,13 +292,11 @@ export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemainin
       <AnimatePresence>
         {lastWin > 0 && lastWinBucket !== null && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className={cn(
-              'text-center font-display text-2xl font-bold py-2 rounded',
-              lastWin >= bet ? 'text-win' : 'text-lose',
-            )}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="text-center font-display text-xl py-2 font-mono"
+            style={{ color: lastWin >= bet ? 'var(--sf-win)' : 'var(--sf-lose)', fontWeight: 500 }}
           >
             {PLINKO_BUCKETS[lastWinBucket]}× — {lastWin >= bet ? '+' : ''}{formatMoney(lastWin - bet)}
           </motion.div>
@@ -300,15 +306,13 @@ export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemainin
       <button
         onClick={dropBall}
         disabled={balance < bet || timeRemaining <= 3}
-        onMouseEnter={() => Sound.hover()}
-        className={cn(
-          'py-3 rounded-md font-bold transition-all',
-          balance >= bet && timeRemaining > 3
-            ? 'bg-gold hover:bg-gold-dark text-black glow-gold'
-            : 'bg-[#2a2a2a] text-muted-foreground cursor-not-allowed',
-        )}
+        className="btn-premium py-3"
+        style={{
+          opacity: (balance < bet || timeRemaining <= 3) ? 0.5 : 1,
+          cursor: (balance < bet || timeRemaining <= 3) ? 'not-allowed' : 'pointer',
+        }}
       >
-        {balance >= bet ? `Drop Ball (−${formatMoney(bet)})` : 'Not enough balance'}
+        {balance >= bet ? `Drop ball (−${formatMoney(bet)})` : 'Not enough balance'}
       </button>
     </div>
   );

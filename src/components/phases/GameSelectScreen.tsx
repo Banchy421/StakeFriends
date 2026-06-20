@@ -19,7 +19,6 @@ interface GameSelectScreenProps {
 }
 
 export function GameSelectScreen({ state, self, isHost, onSelect, onAdvance, onLeave }: GameSelectScreenProps) {
-  // Local override for pick — falls back to what host has recorded
   const [localPick, setLocalPick] = useState<GameName | undefined>(undefined);
   const remotePick = self ? state.playerGameChoices[self.id] : undefined;
   const selected = localPick ?? remotePick;
@@ -29,7 +28,6 @@ export function GameSelectScreen({ state, self, isHost, onSelect, onAdvance, onL
     state.phase,
     () => {},
     () => {
-      // Time's up — host auto-advances
       if (isHost) onAdvance();
     },
   );
@@ -47,22 +45,28 @@ export function GameSelectScreen({ state, self, isHost, onSelect, onAdvance, onL
 
   return (
     <div className="min-h-screen flex flex-col p-4">
-      <header className="flex items-center justify-between mb-4">
+      <header className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-display text-2xl text-gold">
+          <h2 className="font-display text-2xl mb-1" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>
             {state.currentRound === state.totalRounds
-              ? 'Final Round — Pick Your Game'
-              : `Round ${state.currentRound} — Pick Your Game`}
+              ? 'Final round — pick your game'
+              : `Round ${state.currentRound} — pick your game`}
           </h2>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
             {pickedCount}/{playerCount} players picked
           </p>
         </div>
-        <RoundTimer remaining={timeRemaining} total={state.roundDuration} label="Pick Time" compact />
-        <button onClick={onLeave} className="text-xs text-muted-foreground hover:text-lose">Leave</button>
+        <RoundTimer remaining={timeRemaining} total={state.roundDuration} label="Pick time" compact />
+        <button
+          onClick={onLeave}
+          className="text-xs transition-colors"
+          style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}
+        >
+          Leave
+        </button>
       </header>
 
-      <div className="flex-1 grid md:grid-cols-3 gap-4 items-center">
+      <div className="flex-1 grid md:grid-cols-3 gap-3 items-center max-w-4xl mx-auto w-full">
         {state.availableGames.map((g, i) => {
           const meta = GAME_META[g];
           const isPicked = selected === g;
@@ -70,45 +74,45 @@ export function GameSelectScreen({ state, self, isHost, onSelect, onAdvance, onL
           return (
             <motion.button
               key={g}
-              initial={{ opacity: 0, y: 30, rotate: -2 }}
-              animate={{ opacity: 1, y: 0, rotate: 0 }}
-              transition={{ delay: i * 0.1, type: 'spring' }}
-              whileHover={{ scale: 1.04, y: -4 }}
-              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.99 }}
               onClick={() => handlePick(g)}
-              className={cn(
-                'panel p-6 text-left transition-all border-2',
-                isPicked
-                  ? 'border-gold glow-gold-strong bg-gold bg-opacity-5'
-                  : 'border-[#2a2a2a] hover:border-gold',
-              )}
-              style={{ borderColor: isPicked ? meta.accent : undefined }}
+              className="panel p-6 text-left transition-colors"
+              style={{
+                borderColor: isPicked ? 'var(--sf-accent)' : 'var(--sf-border)',
+                backgroundColor: isPicked ? 'var(--sf-border)' : 'var(--sf-bg-secondary)',
+              }}
             >
-              <div className="text-6xl mb-3">{meta.icon}</div>
-              <h3 className="font-display text-2xl text-gold mb-2">{meta.label}</h3>
-              <p className="text-sm text-muted-foreground mb-3">{meta.description}</p>
+              <div className="text-4xl mb-4">{meta.icon}</div>
+              <h3 className="font-display text-xl mb-1.5" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>
+                {meta.label}
+              </h3>
+              <p className="text-sm mb-4" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+                {meta.description}
+              </p>
               {pickerCount > 0 && (
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
                   {pickerCount} player{pickerCount !== 1 ? 's' : ''} picked
                 </div>
               )}
               {isPicked && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="mt-3 inline-block px-3 py-1 bg-gold text-black text-xs font-bold rounded"
+                <div
+                  className="mt-3 inline-block px-2.5 py-0.5 rounded text-xs"
+                  style={{ backgroundColor: 'var(--sf-accent)', color: 'var(--sf-text)', fontWeight: 400 }}
                 >
-                  ✓ YOUR PICK
-                </motion.div>
+                  Your pick
+                </div>
               )}
             </motion.button>
           );
         })}
       </div>
 
-      {/* Footer */}
-      <div className="mt-4 flex items-center justify-between gap-4">
-        <div className="text-sm text-muted-foreground">
+      <div className="mt-6 flex items-center justify-between gap-4 max-w-4xl mx-auto w-full">
+        <div className="text-sm" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
           {selected
             ? `Selected: ${GAME_META[selected].label}. You can change your mind.`
             : 'Click a game to pick. If you don\'t pick, one will be assigned randomly.'}
@@ -117,15 +121,15 @@ export function GameSelectScreen({ state, self, isHost, onSelect, onAdvance, onL
           <button
             onClick={onAdvance}
             disabled={!allPicked}
-            onMouseEnter={() => Sound.hover()}
-            className={cn(
-              'px-6 py-2.5 rounded-md font-bold transition-all',
-              allPicked
-                ? 'bg-gold hover:bg-gold-dark text-black'
-                : 'bg-[#2a2a2a] text-muted-foreground cursor-not-allowed',
-            )}
+            className="px-5 py-2 rounded-md transition-colors"
+            style={{
+              backgroundColor: allPicked ? 'var(--sf-accent)' : 'var(--sf-border)',
+              color: 'var(--sf-text)',
+              fontWeight: 400,
+              cursor: allPicked ? 'pointer' : 'not-allowed',
+            }}
           >
-            {allPicked ? 'Start Round' : 'Waiting for picks...'}
+            {allPicked ? 'Start round' : 'Waiting for picks...'}
           </button>
         )}
       </div>

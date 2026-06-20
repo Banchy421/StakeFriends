@@ -38,64 +38,77 @@ export function FinalVoteScreen({ state, self, isHost, onVote, onAdvance, onLeav
 
   return (
     <div className="min-h-screen flex flex-col p-4">
-      <header className="flex items-center justify-between mb-4">
+      <header className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-display text-2xl text-gold">🏁 Final Round Vote</h2>
-          <p className="text-xs text-muted-foreground">
+          <h2 className="font-display text-2xl mb-1" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>
+            Final round vote
+          </h2>
+          <p className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
             Vote for the final game. {voteCount}/{totalPlayers} voted
           </p>
         </div>
-        <RoundTimer remaining={timeRemaining} total={state.roundDuration} label="Vote Time" compact />
-        <button onClick={onLeave} className="text-xs text-muted-foreground hover:text-lose">Leave</button>
+        <RoundTimer remaining={timeRemaining} total={state.roundDuration} label="Vote time" compact />
+        <button
+          onClick={onLeave}
+          className="text-xs transition-colors"
+          style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}
+        >
+          Leave
+        </button>
       </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center gap-6">
+      <div className="flex-1 flex flex-col items-center justify-center gap-8">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <p className="text-lg" style={{ color: 'var(--sf-text-muted)' }}>
-            Which game will be the <span style={{ color: 'var(--sf-accent)', fontWeight: 'bold' }}>FINAL ROUND</span>?
+          <p className="text-base" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+            Which game will be the <span style={{ color: 'var(--sf-text)', fontWeight: 500 }}>final round</span>?
           </p>
-          <p className="text-xs mt-1" style={{ color: 'var(--sf-text-muted)' }}>
-            Majority wins instantly. 50/50 tie = coinflip!
+          <p className="text-xs mt-1" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+            Majority wins instantly. 50/50 tie = coinflip.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 gap-6 max-w-2xl w-full">
+        <div className="grid grid-cols-2 gap-4 max-w-2xl w-full">
           {state.finalVoteOptions.map((g, i) => {
             const meta = GAME_META[g];
             const isPicked = selected === g;
-            const voteCount = Object.values(state.finalVoteChoices).filter((v) => v === g).length;
-            const pct = totalPlayers > 0 ? (voteCount / totalPlayers) * 100 : 0;
+            const votes = Object.values(state.finalVoteChoices).filter((v) => v === g).length;
+            const pct = totalPlayers > 0 ? (votes / totalPlayers) * 100 : 0;
             return (
               <motion.button
                 key={g}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.15, type: 'spring' }}
-                whileHover={{ scale: 1.04, y: -4 }}
-                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.99 }}
                 onClick={() => handleVote(g)}
-                className={cn(
-                  'panel p-8 text-center transition-all border-2 relative overflow-hidden',
-                  isPicked ? 'border-gold glow-gold-strong' : 'border-[#2a2a2a] hover:border-gold',
-                )}
-                style={{ borderColor: isPicked ? meta.accent : undefined }}
+                className="panel p-8 text-center transition-colors relative overflow-hidden"
+                style={{
+                  borderColor: isPicked ? 'var(--sf-accent)' : 'var(--sf-border)',
+                  backgroundColor: isPicked ? 'var(--sf-border)' : 'var(--sf-bg-secondary)',
+                }}
               >
-                <div className="text-7xl mb-3">{meta.icon}</div>
-                <h3 className="font-display text-3xl text-gold mb-2">{meta.label}</h3>
-                <p className="text-sm text-muted-foreground mb-3">{meta.description}</p>
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#0a0a0a]">
+                <div className="text-6xl mb-3">{meta.icon}</div>
+                <h3 className="font-display text-2xl mb-2" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>
+                  {meta.label}
+                </h3>
+                <p className="text-sm mb-3" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+                  {meta.description}
+                </p>
+                <div className="h-0.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--sf-bg)' }}>
                   <motion.div
-                    className="h-full bg-gold"
+                    className="h-full"
+                    style={{ backgroundColor: 'var(--sf-accent)' }}
                     initial={{ width: 0 }}
                     animate={{ width: `${pct}%` }}
                   />
                 </div>
-                <div className="text-xs text-muted-foreground mt-2">
-                  {voteCount} vote{voteCount !== 1 ? 's' : ''}
+                <div className="text-xs mt-2" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+                  {votes} vote{votes !== 1 ? 's' : ''}
                 </div>
               </motion.button>
             );
@@ -106,9 +119,10 @@ export function FinalVoteScreen({ state, self, isHost, onVote, onAdvance, onLeav
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center text-gold"
+            className="text-sm"
+            style={{ color: 'var(--sf-text)', fontWeight: 400 }}
           >
-            ✓ You voted for {GAME_META[selected].label}
+            You voted for {GAME_META[selected].label}
           </motion.div>
         )}
       </div>

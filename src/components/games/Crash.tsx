@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { crashPointsForRound } from '@/lib/utils-casino';
 import { Sound } from '@/lib/sounds';
 import { formatMoney } from '@/lib/utils-casino';
@@ -34,7 +34,6 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   useEffect(() => { phaseRef.current = phase; }, [phase]);
   const cashedRef = useRef(false);
 
-  // Pre-computed crash points for the round
   const crashPoints = useRef<number[]>(crashPointsForRound(seed, 10));
 
   const startRound = () => {
@@ -59,11 +58,9 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
     if (phase !== 'running') return;
     const tick = () => {
       const elapsed = (performance.now() - startTimeRef.current) / 1000;
-      // Multiplier grows exponentially: m = e^(k*t)
       const k = 0.18;
       const m = Math.pow(Math.E, k * elapsed);
       if (m >= crashPoint) {
-        // Crash!
         setMultiplier(crashPoint);
         setPhase('crashed');
         Sound.crashBoom();
@@ -72,10 +69,6 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
         return;
       }
       setMultiplier(m);
-      // Periodic tick sound based on growth
-      if (Math.floor(m * 10) % 5 === 0) {
-        // small tick
-      }
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
@@ -102,22 +95,24 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-4">
       <div className="text-center">
-        <h2 className="font-display text-3xl text-gold mb-1">🚀 Crash</h2>
-        <p className="text-xs text-muted-foreground">Cash out before the rocket crashes.</p>
+        <h2 className="font-display text-2xl mb-1" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>Crash</h2>
+        <p className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Cash out before the rocket crashes.</p>
       </div>
 
       <BetControls balance={balance} bet={bet} setBet={setBet} disabled={phase === 'running'} />
 
-      {/* History */}
       {history.length > 0 && (
-        <div className="panel p-2 flex gap-1.5 overflow-x-auto casino-scroll">
+        <div className="flex gap-1.5 overflow-x-auto casino-scroll">
           {history.map((h, i) => (
             <span
               key={i}
-              className={cn(
-                'text-xs px-2 py-1 rounded font-mono flex-shrink-0',
-                h >= 2 ? 'bg-win bg-opacity-20 text-win' : 'bg-lose bg-opacity-20 text-lose',
-              )}
+              className="text-xs px-2 py-1 rounded font-mono flex-shrink-0"
+              style={{
+                backgroundColor: h >= 2 ? 'var(--sf-border)' : 'var(--sf-bg)',
+                border: '0.5px solid var(--sf-border)',
+                color: h >= 2 ? 'var(--sf-win)' : 'var(--sf-lose)',
+                fontWeight: 400,
+              }}
             >
               {h.toFixed(2)}×
             </span>
@@ -125,31 +120,21 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
         </div>
       )}
 
-      {/* Graph */}
-      <div className={cn(
-        'panel p-6 h-64 flex items-center justify-center relative overflow-hidden',
-        phase === 'crashed' && 'flash-lose',
-        phase === 'cashed' && 'flash-win',
-      )}>
+      <div
+        className={cn('panel p-6 h-56 flex items-center justify-center relative overflow-hidden',
+          phase === 'crashed' && 'flash-lose',
+          phase === 'cashed' && 'flash-win',
+        )}
+      >
         <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-          <defs>
-            <linearGradient id="crashGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="rgba(201, 168, 76, 0.4)" />
-              <stop offset="100%" stopColor="rgba(201, 168, 76, 0)" />
-            </linearGradient>
-          </defs>
           {phase === 'running' || phase === 'cashed' ? (
             <>
               <motion.path
                 d={`M 0 100 Q ${50} ${100 - Math.min(95, (multiplier - 1) * 30)}, ${Math.min(95, (multiplier - 1) * 50)} ${100 - Math.min(95, (multiplier - 1) * 30)}`}
-                stroke={phase === 'cashed' ? '#38A169' : '#C9A84C'}
-                strokeWidth="2"
+                stroke={phase === 'cashed' ? 'var(--sf-win)' : 'var(--sf-accent)'}
+                strokeWidth="1.5"
                 fill="none"
                 strokeLinecap="round"
-              />
-              <motion.path
-                d={`M 0 100 Q ${50} ${100 - Math.min(95, (multiplier - 1) * 30)}, ${Math.min(95, (multiplier - 1) * 50)} ${100 - Math.min(95, (multiplier - 1) * 30)} L ${Math.min(95, (multiplier - 1) * 50)} 100 Z`}
-                fill="url(#crashGradient)"
               />
             </>
           ) : null}
@@ -159,41 +144,40 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
           {phase === 'crashed' ? (
             <>
               <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
+                initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="text-lose text-2xl font-bold mb-1"
+                className="text-sm mb-1"
+                style={{ color: 'var(--sf-lose)', fontWeight: 400 }}
               >
-                💥 CRASHED
+                Crashed
               </motion.div>
               <motion.div
-                animate={{ scale: [1, 1.1, 1] }}
+                animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 0.5 }}
-                className="font-display font-bold text-lose text-6xl"
+                className="font-display font-mono text-5xl"
+                style={{ color: 'var(--sf-lose)', fontWeight: 500 }}
               >
                 {crashPoint.toFixed(2)}×
               </motion.div>
             </>
           ) : (
             <motion.div
-              animate={
-                phase === 'running'
-                  ? { scale: [1, 1.05, 1] }
-                  : {}
-              }
+              animate={phase === 'running' ? { scale: [1, 1.03, 1] } : {}}
               transition={{ duration: 0.5, repeat: phase === 'running' ? Infinity : 0 }}
-              className={cn(
-                'font-display font-bold',
-                phase === 'cashed' ? 'text-win text-7xl' : 'text-gold text-7xl',
-              )}
+              className="font-display font-mono text-6xl"
+              style={{
+                color: phase === 'cashed' ? 'var(--sf-win)' : 'var(--sf-text)',
+                fontWeight: 500,
+              }}
             >
               {multiplier.toFixed(2)}×
             </motion.div>
           )}
           {phase === 'idle' && (
-            <div className="text-muted-foreground text-sm mt-2">Place a bet to launch</div>
+            <div className="text-sm mt-2" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Place a bet to launch</div>
           )}
           {phase === 'cashed' && (
-            <div className="text-win text-2xl mt-2 font-bold">+{formatMoney(winAmount - bet)}</div>
+            <div className="text-lg mt-2 font-mono" style={{ color: 'var(--sf-win)', fontWeight: 400 }}>+{formatMoney(winAmount - bet)}</div>
           )}
         </div>
       </div>
@@ -204,18 +188,16 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
           (phase === 'idle' && (balance < bet || timeRemaining <= 3)) ||
           (phase === 'cashed' || phase === 'crashed')
         }
-        onMouseEnter={() => Sound.hover()}
-        className={cn(
-          'py-3 rounded-md font-bold transition-all',
-          phase === 'running'
-            ? 'bg-win hover:bg-green-700 text-white glow-win'
-            : phase === 'idle' && balance >= bet && timeRemaining > 3
-              ? 'bg-gold hover:bg-gold-dark text-black glow-gold'
-              : 'bg-[#2a2a2a] text-muted-foreground cursor-not-allowed',
-        )}
+        className="py-3 rounded-md transition-colors"
+        style={{
+          backgroundColor: phase === 'running' ? 'var(--sf-win)' : (phase === 'idle' && balance >= bet && timeRemaining > 3) ? 'var(--sf-accent)' : 'var(--sf-border)',
+          color: 'var(--sf-text)',
+          fontWeight: 400,
+          cursor: ((phase === 'idle' && (balance < bet || timeRemaining <= 3)) || phase === 'cashed' || phase === 'crashed') ? 'not-allowed' : 'pointer',
+        }}
       >
         {phase === 'running'
-          ? `CASH OUT (${formatMoney(bet * multiplier * bonusMultiplier)})`
+          ? `Cash out (${formatMoney(bet * multiplier * bonusMultiplier)})`
           : phase === 'cashed' || phase === 'crashed'
             ? '...'
             : balance >= bet ? `Launch (−${formatMoney(bet)})` : 'Not enough balance'

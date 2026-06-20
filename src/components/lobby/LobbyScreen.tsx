@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { GameState, GameMode, Player } from '@/lib/types';
+import type { GameState, GameMode } from '@/lib/types';
 import { Sound } from '@/lib/sounds';
 import { PlayerCard } from './PlayerCard';
 import { cn } from '@/lib/utils';
+import { ThemePicker } from '@/components/theme/ThemePicker';
 
 interface LobbyScreenProps {
   state: GameState;
-  self: Player | null;
+  self: import('@/lib/types').Player | null;
   isHost: boolean;
   roomCode: string;
   onStart: (mode: GameMode) => void;
@@ -27,7 +28,7 @@ export function LobbyScreen({ state, self, isHost, roomCode, onStart, onLeave, s
   const copyCode = () => {
     navigator.clipboard?.writeText(roomCode).then(() => {
       setCopied(true);
-      Sound.cashRegister();
+      Sound.click();
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -36,55 +37,70 @@ export function LobbyScreen({ state, self, isHost, roomCode, onStart, onLeave, s
     const url = `${window.location.origin}/?room=${roomCode}`;
     navigator.clipboard?.writeText(url).then(() => {
       setCopied(true);
-      Sound.cashRegister();
+      Sound.click();
       setTimeout(() => setCopied(false), 2000);
     });
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 py-8">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 py-10 relative">
+      <div className="absolute top-5 right-5">
+        <ThemePicker />
+      </div>
+
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-6"
+        className="text-center mb-8"
       >
-        <h2 className="font-display text-3xl md:text-4xl font-bold text-gold mb-1">
-          {soloMode ? 'Solo Lobby' : 'Room Lobby'}
+        <h2 className="font-display text-3xl mb-1" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>
+          {soloMode ? 'Solo lobby' : 'Room lobby'}
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
           {soloMode ? 'Pick a mode and start your solo session' : 'Share the code with your friends'}
         </p>
       </motion.div>
 
       {!soloMode && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
-          className="panel p-6 mb-6 w-full max-w-md text-center pulse-gold"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="panel p-6 mb-6 w-full max-w-md text-center"
         >
-          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-widest">Room Code</p>
+          <p className="text-xs mb-2.5" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Room code</p>
           <button
             onClick={copyCode}
-            className="font-mono text-5xl md:text-6xl font-bold tracking-[0.3em] text-gold hover:scale-105 transition-transform"
+            className="font-mono text-4xl tracking-[0.25em] transition-opacity hover:opacity-70"
+            style={{ color: 'var(--sf-text)', fontWeight: 500 }}
             title="Click to copy"
           >
             {roomCode}
           </button>
-          <div className="mt-3 flex gap-2 justify-center">
+          <div className="mt-3.5 flex gap-2 justify-center">
             <button
               onClick={copyCode}
-              onMouseEnter={() => Sound.hover()}
-              className="text-xs px-3 py-1.5 bg-[#0a0a0a] border border-[#2a2a2a] hover:border-gold rounded text-muted-foreground hover:text-white transition-all"
+              className="text-xs px-3 py-1.5 rounded-md border transition-colors"
+              style={{
+                backgroundColor: 'var(--sf-bg)',
+                borderColor: 'var(--sf-border)',
+                color: 'var(--sf-text-muted)',
+                fontWeight: 400,
+              }}
             >
-              {copied ? '✓ Copied!' : 'Copy Code'}
+              {copied ? 'Copied' : 'Copy code'}
             </button>
             <button
               onClick={shareLink}
-              onMouseEnter={() => Sound.hover()}
-              className="text-xs px-3 py-1.5 bg-[#0a0a0a] border border-[#2a2a2a] hover:border-gold rounded text-muted-foreground hover:text-white transition-all"
+              className="text-xs px-3 py-1.5 rounded-md border transition-colors"
+              style={{
+                backgroundColor: 'var(--sf-bg)',
+                borderColor: 'var(--sf-border)',
+                color: 'var(--sf-text-muted)',
+                fontWeight: 400,
+              }}
             >
-              Copy Invite Link
+              Copy invite link
             </button>
           </div>
         </motion.div>
@@ -92,29 +108,28 @@ export function LobbyScreen({ state, self, isHost, roomCode, onStart, onLeave, s
 
       {soloMode && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
           className="panel p-6 mb-6 w-full max-w-md text-center"
         >
-          <div className="text-5xl mb-2">🤖</div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
             You'll play against 2 AI bots. They make random bets.
           </p>
         </motion.div>
       )}
 
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.1 }}
         className="panel p-5 w-full max-w-md mb-6"
       >
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-display text-lg text-gold">Players</h3>
-          <span className="text-sm text-muted-foreground">{playerList.length}/10</span>
+          <h3 className="font-display text-base" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>Players</h3>
+          <span className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>{playerList.length}/10</span>
         </div>
-        <div className="space-y-2 max-h-72 overflow-y-auto casino-scroll">
+        <div className="space-y-1.5 max-h-72 overflow-y-auto casino-scroll">
           <AnimatePresence>
             {playerList.map((p) => (
               <PlayerCard
@@ -130,35 +145,35 @@ export function LobbyScreen({ state, self, isHost, roomCode, onStart, onLeave, s
 
       {isHost ? (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.15 }}
           className="w-full max-w-md"
         >
           <div className="panel p-4 mb-3">
-            <p className="text-xs text-muted-foreground mb-2 uppercase tracking-widest">Game Mode</p>
-            <div className="grid grid-cols-2 gap-2">
+            <p className="text-xs mb-2.5" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Game mode</p>
+            <div className="grid grid-cols-2 gap-1.5">
               <button
                 onClick={() => { setMode('standard'); Sound.click(); }}
-                onMouseEnter={() => Sound.hover()}
-                className={cn(
-                  'p-3 rounded-md border text-left transition-all',
-                  mode === 'standard' ? 'border-gold bg-gold bg-opacity-10' : 'border-[#2a2a2a] hover:border-gold'
-                )}
+                className={cn('p-3 rounded-md border text-left transition-colors')}
+                style={{
+                  borderColor: mode === 'standard' ? 'var(--sf-accent)' : 'var(--sf-border)',
+                  backgroundColor: mode === 'standard' ? 'var(--sf-border)' : 'var(--sf-bg)',
+                }}
               >
-                <div className="font-bold text-gold">Standard</div>
-                <div className="text-xs text-muted-foreground mt-0.5">3 rounds · 60–90s</div>
+                <div style={{ color: 'var(--sf-text)', fontWeight: 500 }}>Standard</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>3 rounds · 60–90s</div>
               </button>
               <button
                 onClick={() => { setMode('extended'); Sound.click(); }}
-                onMouseEnter={() => Sound.hover()}
-                className={cn(
-                  'p-3 rounded-md border text-left transition-all',
-                  mode === 'extended' ? 'border-gold bg-gold bg-opacity-10' : 'border-[#2a2a2a] hover:border-gold'
-                )}
+                className={cn('p-3 rounded-md border text-left transition-colors')}
+                style={{
+                  borderColor: mode === 'extended' ? 'var(--sf-accent)' : 'var(--sf-border)',
+                  backgroundColor: mode === 'extended' ? 'var(--sf-border)' : 'var(--sf-bg)',
+                }}
               >
-                <div className="font-bold text-gold">Extended</div>
-                <div className="text-xs text-muted-foreground mt-0.5">6 rounds · 120–180s</div>
+                <div style={{ color: 'var(--sf-text)', fontWeight: 500 }}>Extended</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>6 rounds · 120–180s</div>
               </button>
             </div>
           </div>
@@ -166,25 +181,27 @@ export function LobbyScreen({ state, self, isHost, roomCode, onStart, onLeave, s
           <button
             onClick={() => { if (canStart) onStart(mode); else Sound.error(); }}
             disabled={!canStart}
-            onMouseEnter={() => canStart && Sound.hover()}
             className={cn(
-              'w-full py-3.5 rounded-md font-bold transition-all',
-              canStart
-                ? 'bg-gold hover:bg-gold-dark text-black glow-gold-strong'
-                : 'bg-[#2a2a2a] text-muted-foreground cursor-not-allowed'
+              'w-full py-3 rounded-md transition-colors',
             )}
+            style={{
+              backgroundColor: canStart ? 'var(--sf-accent)' : 'var(--sf-border)',
+              color: 'var(--sf-text)',
+              fontWeight: 400,
+              cursor: canStart ? 'pointer' : 'not-allowed',
+            }}
           >
-            {canStart ? (soloMode ? 'Start Solo Game' : 'Start Game') : 'Waiting for 2+ players...'}
+            {canStart ? (soloMode ? 'Start solo game' : 'Start game') : 'Waiting for 2+ players...'}
           </button>
         </motion.div>
       ) : (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.15 }}
           className="w-full max-w-md text-center"
         >
-          <div className="panel p-4 mb-3 text-muted-foreground">
+          <div className="panel p-4 mb-3" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
             Waiting for host to start the game...
           </div>
         </motion.div>
@@ -192,10 +209,10 @@ export function LobbyScreen({ state, self, isHost, roomCode, onStart, onLeave, s
 
       <button
         onClick={onLeave}
-        onMouseEnter={() => Sound.hover()}
-        className="mt-6 text-sm text-muted-foreground hover:text-lose transition-colors"
+        className="mt-6 text-sm transition-colors"
+        style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}
       >
-        ← Leave Room
+        ← Leave room
       </button>
     </div>
   );

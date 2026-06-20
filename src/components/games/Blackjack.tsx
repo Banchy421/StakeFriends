@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { freshDeck, handValue, isBlackjack, type Card } from '@/lib/utils-casino';
 import { Sound } from '@/lib/sounds';
@@ -32,7 +32,6 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
 
   const dealCard = (): Card => {
     if (deckIndexRef.current >= deck.length) {
-      // reshuffle
       const newDeck = freshDeck((seed ^ Date.now()) >>> 0);
       setDeck(newDeck);
       deckIndexRef.current = 1;
@@ -41,50 +40,38 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
     return deck[deckIndexRef.current++];
   };
 
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
   const startHand = async () => {
     if (balance < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
-
     Sound.bet();
     onBalanceChange(balance - bet);
     setResult(null);
     setWinAmount(0);
-
-    // Fresh deck
     const newDeck = freshDeck((seed ^ Date.now()) >>> 0);
     setDeck(newDeck);
     deckIndexRef.current = 0;
-
     setPhase('dealing');
     const p: Card[] = [];
     const d: Card[] = [];
-
-    // Deal: player, dealer, player, dealer (face down)
     await sleep(200); p.push({ ...newDeck[deckIndexRef.current++], faceUp: true }); setPlayerHand([...p]); Sound.cardDeal();
     await sleep(400); d.push({ ...newDeck[deckIndexRef.current++], faceUp: true }); setDealerHand([...d]); Sound.cardDeal();
     await sleep(400); p.push({ ...newDeck[deckIndexRef.current++], faceUp: true }); setPlayerHand([...p]); Sound.cardDeal();
     await sleep(400); d.push({ ...newDeck[deckIndexRef.current++], faceUp: false }); setDealerHand([...d]); Sound.cardDeal();
-
-    // Check blackjack
     const playerBJ = isBlackjack(p);
     const dealerBJ = isBlackjack(d);
     if (playerBJ || dealerBJ) {
       await sleep(300);
-      // Reveal dealer's hole card
       d[1].faceUp = true;
       setDealerHand([...d]);
       Sound.cardFlip();
       await sleep(600);
-      if (playerBJ && dealerBJ) {
-        finishHand('push', bet);
-      } else if (playerBJ) {
-        finishHand('blackjack', bet * 1.5 * bonusMultiplier);
-      } else {
-        finishHand('lose', 0);
-      }
+      if (playerBJ && dealerBJ) { finishHand('push', bet); }
+      else if (playerBJ) { finishHand('blackjack', bet * 1.5 * bonusMultiplier); }
+      else { finishHand('lose', 0); }
       return;
     }
-
     setPhase('player');
   };
 
@@ -96,9 +83,7 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
     setPlayerHand(newHand);
     const v = handValue(newHand).total;
     if (v > 21) {
-      // Bust
       await sleep(400);
-      // Reveal dealer's hole card
       const d = [...dealerHand];
       d[1].faceUp = true;
       setDealerHand(d);
@@ -106,7 +91,6 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
       await sleep(500);
       finishHand('lose', 0);
     } else if (v === 21) {
-      // Auto stand
       await sleep(300);
       stand();
     }
@@ -115,14 +99,11 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
   const stand = async () => {
     if (phase !== 'player') return;
     setPhase('dealer');
-    // Reveal hole card
     const d = [...dealerHand];
     d[1].faceUp = true;
     setDealerHand(d);
     Sound.cardFlip();
     await sleep(700);
-
-    // Dealer hits on 16 or below
     let cur = d;
     while (handValue(cur).total < 17) {
       await sleep(700);
@@ -131,17 +112,12 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
       cur = [...cur, card];
       setDealerHand([...cur]);
     }
-
     await sleep(500);
     const playerTotal = handValue(playerHand).total;
     const dealerTotal = handValue(cur).total;
-    if (dealerTotal > 21 || playerTotal > dealerTotal) {
-      finishHand('win', bet * bonusMultiplier);
-    } else if (playerTotal < dealerTotal) {
-      finishHand('lose', 0);
-    } else {
-      finishHand('push', bet);
-    }
+    if (dealerTotal > 21 || playerTotal > dealerTotal) { finishHand('win', bet * bonusMultiplier); }
+    else if (playerTotal < dealerTotal) { finishHand('lose', 0); }
+    else { finishHand('push', bet); }
   };
 
   const doubleDown = async () => {
@@ -152,7 +128,6 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
     onBalanceChange(balance - bet);
     const doubledBet = bet * 2;
     setBet(doubledBet);
-    // Take one card then stand
     Sound.cardDeal();
     const card = { ...deck[deckIndexRef.current++], faceUp: true };
     const newHand = [...playerHand, card];
@@ -160,7 +135,6 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
     await sleep(500);
     const v = handValue(newHand).total;
     if (v > 21) {
-      // Bust
       const d = [...dealerHand];
       d[1].faceUp = true;
       setDealerHand(d);
@@ -169,8 +143,6 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
       finishHand('lose', 0);
       setBet(bet);
     } else {
-      // Continue to dealer with the doubled bet
-      // Stand logic but with doubled bet
       setPhase('dealer');
       const d = [...dealerHand];
       d[1].faceUp = true;
@@ -188,13 +160,9 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
       await sleep(500);
       const playerTotal = handValue(newHand).total;
       const dealerTotal = handValue(cur).total;
-      if (dealerTotal > 21 || playerTotal > dealerTotal) {
-        finishHand('win', doubledBet * bonusMultiplier);
-      } else if (playerTotal < dealerTotal) {
-        finishHand('lose', 0);
-      } else {
-        finishHand('push', doubledBet);
-      }
+      if (dealerTotal > 21 || playerTotal > dealerTotal) { finishHand('win', doubledBet * bonusMultiplier); }
+      else if (playerTotal < dealerTotal) { finishHand('lose', 0); }
+      else { finishHand('push', doubledBet); }
       setBet(bet);
     }
   };
@@ -219,62 +187,58 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
     }, 3000);
   };
 
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
   const playerTotal = handValue(playerHand).total;
   const dealerTotal = handValue(dealerHand.filter((c) => c.faceUp)).total;
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-4">
       <div className="text-center">
-        <h2 className="font-display text-3xl text-gold mb-1">🃏 Blackjack</h2>
-        <p className="text-xs text-muted-foreground">Beat the dealer to 21. Blackjack pays 3:2.</p>
+        <h2 className="font-display text-2xl mb-1" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>Blackjack</h2>
+        <p className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Beat the dealer to 21. Blackjack pays 3:2.</p>
       </div>
 
       <BetControls balance={balance} bet={bet} setBet={setBet} disabled={phase !== 'idle'} />
 
-      {/* Dealer */}
       <div className="panel p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-muted-foreground uppercase tracking-widest">Dealer</span>
+          <span className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Dealer</span>
           {dealerHand.length > 0 && (
-            <span className="font-mono text-gold text-sm">
+            <span className="font-mono text-sm" style={{ color: 'var(--sf-text)', fontWeight: 400 }}>
               {dealerHand.some((c) => !c.faceUp) ? `${dealerTotal}+?` : dealerTotal}
             </span>
           )}
         </div>
-        <div className="flex gap-2 min-h-[110px] items-center">
+        <div className="flex gap-2 min-h-[100px] items-center">
           <AnimatePresence>
             {dealerHand.map((card, i) => (
               <CardView key={i} card={card} delay={i * 0.4} />
             ))}
             {dealerHand.length === 0 && (
-              <div className="text-muted-foreground text-sm">Awaiting deal...</div>
+              <div className="text-sm" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Awaiting deal...</div>
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Player */}
       <div className="panel p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-muted-foreground uppercase tracking-widest">You</span>
+          <span className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>You</span>
           {playerHand.length > 0 && (
-            <span className={cn(
-              'font-mono text-sm',
-              playerTotal > 21 ? 'text-lose' : playerTotal === 21 ? 'text-win' : 'text-gold',
-            )}>
-              {playerTotal}{playerTotal > 21 ? ' BUST' : ''}
+            <span className="font-mono text-sm" style={{
+              color: playerTotal > 21 ? 'var(--sf-lose)' : playerTotal === 21 ? 'var(--sf-win)' : 'var(--sf-text)',
+              fontWeight: 400,
+            }}>
+              {playerTotal}{playerTotal > 21 ? ' bust' : ''}
             </span>
           )}
         </div>
-        <div className="flex gap-2 min-h-[110px] items-center">
+        <div className="flex gap-2 min-h-[100px] items-center">
           <AnimatePresence>
             {playerHand.map((card, i) => (
               <CardView key={i} card={card} delay={i * 0.4} />
             ))}
             {playerHand.length === 0 && (
-              <div className="text-muted-foreground text-sm">Place your bet and deal</div>
+              <div className="text-sm" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Place your bet and deal</div>
             )}
           </AnimatePresence>
         </div>
@@ -283,21 +247,19 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
       <AnimatePresence>
         {result && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className={cn(
-              'text-center font-display text-2xl font-bold py-2 rounded',
-              result === 'win' && 'text-win bg-win bg-opacity-10',
-              result === 'lose' && 'text-lose bg-lose bg-opacity-10',
-              result === 'push' && 'text-muted-foreground bg-muted bg-opacity-10',
-              result === 'blackjack' && 'text-gold bg-gold bg-opacity-10 flash-gold',
-            )}
+            className="text-center font-display text-xl py-2"
+            style={{
+              color: result === 'win' || result === 'blackjack' ? 'var(--sf-win)' : result === 'lose' ? 'var(--sf-lose)' : 'var(--sf-text-muted)',
+              fontWeight: 500,
+            }}
           >
-            {result === 'win' && `WIN +${formatMoney(winAmount - bet)}`}
-            {result === 'blackjack' && `BLACKJACK +${formatMoney(winAmount - bet)}`}
-            {result === 'lose' && `LOST −${formatMoney(bet)}`}
-            {result === 'push' && 'PUSH — bet returned'}
+            {result === 'win' && `Win +${formatMoney(winAmount - bet)}`}
+            {result === 'blackjack' && `Blackjack +${formatMoney(winAmount - bet)}`}
+            {result === 'lose' && `Lost −${formatMoney(bet)}`}
+            {result === 'push' && 'Push — bet returned'}
           </motion.div>
         )}
       </AnimatePresence>
@@ -307,50 +269,41 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
           <button
             onClick={startHand}
             disabled={balance < bet || timeRemaining <= 3}
-            onMouseEnter={() => Sound.hover()}
-            className={cn(
-              'flex-1 py-3 rounded-md font-bold transition-all',
-              balance >= bet && timeRemaining > 3
-                ? 'bg-gold hover:bg-gold-dark text-black glow-gold'
-                : 'bg-[#2a2a2a] text-muted-foreground cursor-not-allowed',
-            )}
+            className="btn-premium flex-1 py-3"
+            style={{ opacity: (balance < bet || timeRemaining <= 3) ? 0.5 : 1, cursor: (balance < bet || timeRemaining <= 3) ? 'not-allowed' : 'pointer' }}
           >
             {balance >= bet ? `Deal (−${formatMoney(bet)})` : 'Not enough balance'}
           </button>
         )}
         {phase === 'player' && (
           <>
-            <button
-              onClick={hit}
-              onMouseEnter={() => Sound.hover()}
-              className="flex-1 py-3 rounded-md font-bold bg-gold hover:bg-gold-dark text-black"
-            >
-              Hit
-            </button>
+            <button onClick={hit} className="btn-premium flex-1 py-3">Hit</button>
             <button
               onClick={stand}
-              onMouseEnter={() => Sound.hover()}
-              className="flex-1 py-3 rounded-md font-bold bg-win hover:bg-green-700 text-white"
+              className="flex-1 py-3 rounded-md transition-colors"
+              style={{ backgroundColor: 'var(--sf-win)', color: 'var(--sf-bg)', fontWeight: 400 }}
             >
               Stand
             </button>
             <button
               onClick={doubleDown}
               disabled={playerHand.length !== 2 || balance < bet}
-              onMouseEnter={() => Sound.hover()}
-              className={cn(
-                'flex-1 py-3 rounded-md font-bold',
-                playerHand.length === 2 && balance >= bet
-                  ? 'bg-[#1a1a1a] border border-gold text-gold hover:bg-gold hover:text-black'
-                  : 'bg-[#2a2a2a] text-muted-foreground cursor-not-allowed',
-              )}
+              className="flex-1 py-3 rounded-md border transition-colors"
+              style={{
+                backgroundColor: 'var(--sf-bg)',
+                borderColor: 'var(--sf-border)',
+                color: 'var(--sf-text)',
+                fontWeight: 400,
+                cursor: (playerHand.length !== 2 || balance < bet) ? 'not-allowed' : 'pointer',
+                opacity: (playerHand.length !== 2 || balance < bet) ? 0.4 : 1,
+              }}
             >
               Double
             </button>
           </>
         )}
         {(phase === 'dealing' || phase === 'dealer') && (
-          <div className="flex-1 py-3 rounded-md font-bold bg-[#1a1a1a] text-gold text-center">
+          <div className="flex-1 py-3 rounded-md text-center" style={{ backgroundColor: 'var(--sf-bg-secondary)', border: '0.5px solid var(--sf-border)', color: 'var(--sf-text-muted)', fontWeight: 400 }}>
             {phase === 'dealing' ? 'Dealing...' : 'Dealer playing...'}
           </div>
         )}
@@ -363,23 +316,27 @@ function CardView({ card, delay = 0 }: { card: Card; delay?: number }) {
   const isRed = card.suit === '♥' || card.suit === '♦';
   return (
     <motion.div
-      initial={{ y: -100, opacity: 0, rotateY: 180 }}
-      animate={{ y: 0, opacity: 1, rotateY: 0 }}
+      initial={{ y: -60, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
       transition={{ delay, type: 'spring', stiffness: 200 }}
-      className="w-16 h-24 rounded-md flex flex-col items-center justify-center bg-white shadow-lg relative"
+      className="w-14 h-20 rounded-md flex flex-col items-center justify-center"
+      style={{
+        backgroundColor: card.faceUp ? 'var(--sf-bg)' : 'var(--sf-bg-secondary)',
+        border: '0.5px solid var(--sf-border)',
+      }}
     >
       {card.faceUp ? (
         <>
-          <div className={cn('text-2xl font-bold', isRed ? 'text-lose' : 'text-black')}>
+          <div className="text-xl" style={{ color: isRed ? 'var(--sf-lose)' : 'var(--sf-text)', fontWeight: 500 }}>
             {card.rank}
           </div>
-          <div className={cn('text-2xl', isRed ? 'text-lose' : 'text-black')}>
+          <div className="text-xl" style={{ color: isRed ? 'var(--sf-lose)' : 'var(--sf-text)' }}>
             {card.suit}
           </div>
         </>
       ) : (
-        <div className="w-full h-full rounded-md bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] flex items-center justify-center border-2 border-gold">
-          <span className="text-gold text-2xl">♠</span>
+        <div className="w-full h-full rounded-md flex items-center justify-center" style={{ backgroundColor: 'var(--sf-bg-secondary)' }}>
+          <span style={{ color: 'var(--sf-text-muted)' }}>♠</span>
         </div>
       )}
     </motion.div>

@@ -14,24 +14,25 @@ interface SkipVoteButtonProps {
 
 export function SkipVoteButton({ voted, count, total, onVote, onUnvote }: SkipVoteButtonProps) {
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-end gap-0.5">
       <motion.button
-        whileHover={{ scale: 1.03 }}
-        whileTap={{ scale: 0.97 }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         onClick={() => {
           if (voted) { onUnvote(); Sound.skip(); }
           else { onVote(); Sound.click(); }
         }}
-        className={cn(
-          'px-4 py-2 rounded-md font-bold text-sm transition-all',
-          voted
-            ? 'bg-lose text-white'
-            : 'bg-[#1a1a1a] border border-[#2a2a2a] hover:border-lose text-muted-foreground hover:text-lose'
-        )}
+        className="px-3 py-1.5 rounded-md border text-xs transition-colors"
+        style={{
+          backgroundColor: voted ? 'var(--sf-lose)' : 'var(--sf-bg)',
+          borderColor: 'var(--sf-border)',
+          color: voted ? 'var(--sf-bg)' : 'var(--sf-text-muted)',
+          fontWeight: 400,
+        }}
       >
-        {voted ? '✓ Voted to Skip' : 'Vote to Skip'}
+        {voted ? 'Voted to skip' : 'Vote to skip'}
       </motion.button>
-      <div className="text-xs text-muted-foreground">
+      <div className="text-[10px]" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
         {count}/{total} players
       </div>
     </div>

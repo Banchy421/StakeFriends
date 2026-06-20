@@ -109,13 +109,16 @@ export default function Home() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-sm">
-          <div className="mb-4 inline-block">
-            <div className="w-12 h-12 rounded-full border-4 border-[#2a2a2a] border-t-gold animate-spin mx-auto" />
+          <div className="mb-5 inline-block">
+            <div
+              className="w-10 h-10 rounded-full animate-spin mx-auto"
+              style={{ border: '2px solid var(--sf-border)', borderTopColor: 'var(--sf-accent)' }}
+            />
           </div>
-          <div className="font-display text-2xl text-gold mb-2">
+          <div className="font-display text-xl mb-2" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>
             {api.connectionStatus === 'connecting' ? 'Connecting...' : 'Loading...'}
           </div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
             {mode === 'solo'
               ? 'Starting solo session'
               : api.connectionStatus === 'connecting'
@@ -123,13 +126,17 @@ export default function Home() {
                 : 'Loading game state'}
           </div>
           {mode === 'multiplayer' && api.connectionStatus === 'connecting' && (
-            <div className="mt-3 text-xs text-muted-foreground">
-              <p>· Connecting to tracker servers</p>
-              <p>· Establishing WebRTC data channel</p>
-              <p>· Waiting for host response</p>
+            <div className="mt-4 text-xs leading-relaxed" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+              <p>Connecting to tracker servers</p>
+              <p>Establishing WebRTC data channel</p>
+              <p>Waiting for host response</p>
             </div>
           )}
-          <button onClick={handleLeave} className="mt-4 text-xs text-muted-foreground hover:text-lose">
+          <button
+            onClick={handleLeave}
+            className="mt-5 text-xs transition-colors"
+            style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}
+          >
             ← Cancel
           </button>
         </div>

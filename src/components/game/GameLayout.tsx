@@ -128,31 +128,44 @@ export function GameLayout({
   return (
     <div className="min-h-screen flex flex-col">
       {/* Top bar — always visible */}
-      <header className="border-b border-[#2a2a2a] bg-[#1a1a1a] bg-opacity-50 backdrop-blur px-3 py-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+      <header
+        className="px-4 py-2.5 flex items-center justify-between gap-2 border-b"
+        style={{ backgroundColor: 'var(--sf-bg-secondary)', borderColor: 'var(--sf-border)' }}
+      >
+        <div className="flex items-center gap-3 min-w-0">
           {isMobile && (
-            <span className="text-xs text-muted-foreground">#{state.currentRound}/{state.totalRounds}</span>
+            <span className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+              {state.currentRound}/{state.totalRounds}
+            </span>
           )}
           {!isMobile && (
             <>
-              <span className="text-xs text-muted-foreground uppercase tracking-widest">Round</span>
-              <span className="font-display font-bold text-gold text-lg">{state.currentRound}/{state.totalRounds}</span>
+              <span className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Round</span>
+              <span className="font-display text-base" style={{ color: 'var(--sf-text)', fontWeight: 500 }}>
+                {state.currentRound}/{state.totalRounds}
+              </span>
               {gameMeta && (
-                <span className="text-sm text-muted-foreground ml-3">
-                  <span className="mr-1">{gameMeta.icon}</span>{gameMeta.label}
+                <span className="text-sm ml-2" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+                  {gameMeta.label}
                 </span>
               )}
             </>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {bonusMultiplier > 1 && (
-            <span className="text-xs px-2 py-1 bg-gold bg-opacity-20 text-gold rounded">
+            <span
+              className="text-xs px-2 py-0.5 rounded"
+              style={{ backgroundColor: 'var(--sf-border)', color: 'var(--sf-text)', fontWeight: 400 }}
+            >
               +{Math.round((bonusMultiplier - 1) * 100)}% bonus
             </span>
           )}
           {bailoutPenalty && (
-            <span className="text-xs px-2 py-1 bg-lose bg-opacity-20 text-lose rounded">
+            <span
+              className="text-xs px-2 py-0.5 rounded"
+              style={{ backgroundColor: 'var(--sf-border)', color: 'var(--sf-lose)', fontWeight: 400 }}
+            >
               −10% bailout penalty
             </span>
           )}
@@ -166,20 +179,24 @@ export function GameLayout({
           {isHost && (
             <button
               onClick={onForceEndRound}
-              onMouseEnter={() => Sound.hover()}
-              className="text-xs px-3 py-2 rounded-md font-medium transition-all"
+              className="text-xs px-2.5 py-1.5 rounded-md border transition-colors"
               style={{
-                backgroundColor: 'var(--sf-bg-secondary)',
-                border: '1px solid var(--sf-border)',
+                backgroundColor: 'var(--sf-bg)',
+                borderColor: 'var(--sf-border)',
                 color: 'var(--sf-text-muted)',
+                fontWeight: 400,
               }}
               title="Force-end this round immediately (use if round is stuck)"
             >
-              ⏹ Force End
+              Force end
             </button>
           )}
           <ThemePicker compact />
-          <button onClick={onLeave} className="text-xs hover:text-lose transition-colors" style={{ color: 'var(--sf-text-muted)' }}>
+          <button
+            onClick={onLeave}
+            className="text-xs transition-colors"
+            style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}
+          >
             Leave
           </button>
         </div>
@@ -188,8 +205,11 @@ export function GameLayout({
       <div className="flex-1 flex">
         {/* Sidebar — desktop only */}
         {!isMobile && (
-          <aside className="w-72 p-3 border-r border-[#2a2a2a] flex flex-col gap-3">
-            <RoundTimer remaining={timeRemaining} total={state.roundDuration} label="Time Left" />
+          <aside
+            className="w-72 p-4 flex flex-col gap-4 border-r"
+            style={{ borderColor: 'var(--sf-border)' }}
+          >
+            <RoundTimer remaining={timeRemaining} total={state.roundDuration} label="Time left" />
             <div className="flex-1 min-h-0">
               <Leaderboard
                 players={state.players}
@@ -201,7 +221,7 @@ export function GameLayout({
         )}
 
         {/* Main game area */}
-        <main className="flex-1 p-3 flex flex-col min-w-0">
+        <main className="flex-1 p-4 flex flex-col min-w-0">
           {isMobile && (
             <>
               <RoundTimer remaining={timeRemaining} total={state.roundDuration} compact />
@@ -219,9 +239,9 @@ export function GameLayout({
               {GameComponent && self ? (
                 <motion.div
                   key={myGame}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   className="w-full h-full flex items-center justify-center"
                 >
                   <GameComponent
@@ -234,9 +254,13 @@ export function GameLayout({
                   />
                 </motion.div>
               ) : (
-                <div className="text-center text-muted-foreground">
-                  <div className="font-display text-2xl mb-2">Waiting for game assignment...</div>
-                  <div className="text-sm">The host will assign you a game shortly.</div>
+                <div className="text-center">
+                  <div className="font-display text-xl mb-1.5" style={{ color: 'var(--sf-text)', fontWeight: 500 }}>
+                    Waiting for game assignment...
+                  </div>
+                  <div className="text-sm" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+                    The host will assign you a game shortly.
+                  </div>
                 </div>
               )}
             </AnimatePresence>

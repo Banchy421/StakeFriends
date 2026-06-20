@@ -6,7 +6,7 @@
 @theme inline {
   --color-background: var(--sf-bg);
   --color-foreground: var(--sf-text);
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-dm-sans);
   --font-mono: var(--font-mono);
   --font-display: var(--font-playfair);
   --color-sidebar-ring: var(--sf-border);
@@ -42,29 +42,29 @@
   --color-gold-dark: var(--sf-accent-dark);
   --color-win: var(--sf-win);
   --color-lose: var(--sf-lose);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
 }
 
 :root {
-  --radius: 0.625rem;
-  /* Default theme — Casino Gold. Overridden by ThemeProvider. */
-  --sf-bg: #0a0a0a;
-  --sf-bg-secondary: #1a1a1a;
-  --sf-bg-tertiary: #0a0a0a;
-  --sf-border: #2a2a2a;
-  --sf-accent: #C9A84C;
-  --sf-accent-dark: #8a6f2c;
-  --sf-accent-rgb: 201, 168, 76;
-  --sf-win: #38A169;
-  --sf-lose: #E53E3E;
-  --sf-text: #f5f5f5;
-  --sf-text-muted: #8a8a8a;
-  --sf-glow: rgba(201, 168, 76, 0.5);
-  --sf-gradient: radial-gradient(at 20% 20%, rgba(201, 168, 76, 0.05) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(229, 62, 62, 0.03) 0px, transparent 50%);
-  --sf-panel-gradient: linear-gradient(135deg, #1a1a1a 0%, #161616 100%);
+  --radius: 10px;
+  /* Beige/linen palette — default theme */
+  --sf-bg: #F7F4EF;
+  --sf-bg-secondary: #EFE9E0;
+  --sf-bg-tertiary: #F7F4EF;
+  --sf-border: #DDD6CA;
+  --sf-accent: #B8A898;
+  --sf-accent-dark: #A39485;
+  --sf-accent-rgb: 184, 168, 152;
+  --sf-win: #6B8E5A;
+  --sf-lose: #B85C5C;
+  --sf-text: #2A2724;
+  --sf-text-muted: #7D756C;
+  --sf-glow: transparent;
+  --sf-gradient: none;
+  --sf-panel-gradient: none;
 }
 
 @layer base {
@@ -76,14 +76,14 @@
     color: var(--sf-text);
   }
   body {
-    font-family: var(--font-inter), system-ui, sans-serif;
+    font-family: var(--font-dm-sans), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     background: var(--sf-bg);
-    background-image: var(--sf-gradient);
-    background-attachment: fixed;
+    font-weight: 400;
   }
   h1, h2, h3, .font-display {
     font-family: var(--font-playfair), Georgia, serif;
+    font-weight: 500;
   }
 }
 
@@ -97,121 +97,107 @@
 .text-lose { color: var(--sf-lose); }
 .bg-lose { background-color: var(--sf-lose); }
 
-.glow-gold { box-shadow: 0 0 20px var(--sf-glow); }
-.glow-gold-strong { box-shadow: 0 0 40px var(--sf-glow); }
-.glow-win { box-shadow: 0 0 20px rgba(var(--sf-win-rgb, 56, 161, 105), 0.5); }
-.glow-lose { box-shadow: 0 0 20px rgba(229, 62, 62, 0.5); }
+/* No glows — flat design */
+.glow-gold { }
+.glow-gold-strong { }
+.glow-win { }
+.glow-lose { }
 
-.text-shadow-gold { text-shadow: 0 0 15px var(--sf-glow); }
+.text-shadow-gold { }
 
-/* Professional panel — gradient background with subtle border + shadow */
+/* Flat panel — no gradient, no shadow, 0.5px border */
 .panel {
-  background: var(--sf-panel-gradient);
-  border: 1px solid var(--sf-border);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  background: var(--sf-bg-secondary);
+  border: 0.5px solid var(--sf-border);
+  border-radius: 10px;
 }
 
-/* Glassmorphism panel — for overlays and modals */
+/* Glassmorphism panel — flat version */
 .panel-glass {
-  background: rgba(var(--sf-accent-rgb), 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(var(--sf-accent-rgb), 0.15);
-  border-radius: var(--radius);
+  background: var(--sf-bg-secondary);
+  border: 0.5px solid var(--sf-border);
+  border-radius: 10px;
 }
 
-/* Premium button — gradient + glow on hover */
+/* Flat button — no gradient, no shadow */
 .btn-premium {
-  background: linear-gradient(135deg, var(--sf-accent) 0%, var(--sf-accent-dark) 100%);
-  color: var(--sf-bg);
-  font-weight: 700;
-  border-radius: var(--radius);
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: var(--sf-accent);
+  color: var(--sf-text);
+  font-weight: 400;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
 }
 .btn-premium:hover {
-  box-shadow: 0 0 25px var(--sf-glow), 0 4px 12px rgba(0, 0, 0, 0.4);
-  transform: translateY(-1px);
-}
-.btn-premium:active {
-  transform: translateY(0);
-}
-
-/* Custom scrollbar */
-.casino-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.casino-scroll::-webkit-scrollbar-track {
-  background: var(--sf-bg-tertiary);
-}
-.casino-scroll::-webkit-scrollbar-thumb {
-  background: var(--sf-accent);
-  border-radius: 3px;
-}
-.casino-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--sf-accent-dark);
 }
 
-/* Animations */
-@keyframes shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
+/* Custom scrollbar — muted */
+.casino-scroll::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
 }
+.casino-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.casino-scroll::-webkit-scrollbar-thumb {
+  background: var(--sf-border);
+  border-radius: 2px;
+}
+.casino-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--sf-text-muted);
+}
+
+/* Shimmer — removed gradient text, use solid accent */
 .shimmer {
-  background: linear-gradient(90deg, var(--sf-accent) 0%, var(--sf-text) 50%, var(--sf-accent) 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: shimmer 3s linear infinite;
+  background: none;
+  -webkit-text-fill-color: var(--sf-text);
+  color: var(--sf-text);
+  animation: none;
 }
 
-@keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 15px var(--sf-glow); }
-  50% { box-shadow: 0 0 35px var(--sf-glow); }
-}
-.pulse-gold { animation: pulse-gold 1.5s ease-in-out infinite; }
+/* No pulse glow — flat */
+.pulse-gold { }
 
+/* Confetti — keep animation but use palette colors */
 @keyframes confetti-fall {
   0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
   100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
 .confetti-piece {
   position: fixed;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   pointer-events: none;
   animation: confetti-fall 3s linear forwards;
 }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-8px); }
-  75% { transform: translateX(8px); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
 }
 .shake { animation: shake 0.4s ease-in-out 2; }
 
+/* Flash effects — use subtle bg change, no glow */
 @keyframes flash-win {
   0%, 100% { background-color: transparent; }
-  50% { background-color: rgba(56, 161, 105, 0.2); }
+  50% { background-color: rgba(107, 142, 90, 0.08); }
 }
 .flash-win { animation: flash-win 0.6s ease-in-out; }
 
 @keyframes flash-lose {
   0%, 100% { background-color: transparent; }
-  50% { background-color: rgba(229, 62, 62, 0.2); }
+  50% { background-color: rgba(184, 92, 92, 0.08); }
 }
 .flash-lose { animation: flash-lose 0.6s ease-in-out; }
 
 @keyframes flash-gold {
   0%, 100% { background-color: transparent; }
-  50% { background-color: rgba(var(--sf-accent-rgb), 0.3); }
+  50% { background-color: rgba(184, 168, 152, 0.15); }
 }
 .flash-gold { animation: flash-gold 0.8s ease-in-out; }
 
-/* 3D coin */
+/* 3D coin — keep for coinflip */
 .coin-3d {
   transform-style: preserve-3d;
   position: relative;
@@ -232,9 +218,9 @@
 /* Slots reel spinning — pure CSS */
 @keyframes reel-bounce {
   0% { transform: translateY(0); }
-  25% { transform: translateY(-8px); }
+  25% { transform: translateY(-6px); }
   50% { transform: translateY(0); }
-  75% { transform: translateY(8px); }
+  75% { transform: translateY(6px); }
   100% { transform: translateY(0); }
 }
 .reel-spinning {
@@ -244,12 +230,20 @@
 /* Smooth transitions for theme changes */
 * {
   transition-property: background-color, border-color, color;
-  transition-duration: 0.3s;
+  transition-duration: 0.2s;
   transition-timing-function: ease;
 }
 
-/* But don't transition interactive elements' transforms */
 button, a, [role="button"] {
-  transition-property: background-color, border-color, color, transform, box-shadow, opacity;
-  transition-duration: 0.2s;
+  transition-property: background-color, border-color, color, transform, opacity;
+  transition-duration: 0.15s;
+}
+
+/* Links — muted, underline on hover only */
+a {
+  color: var(--sf-text-muted);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
 }

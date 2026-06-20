@@ -39,8 +39,6 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
     if (balance < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     if (spinState === 'spinning') return;
-
-    // Clear any leftover intervals from a previous spin
     stopAllIntervals();
 
     Sound.bet();
@@ -51,14 +49,12 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
     setLastPayout(0);
     Sound.reelSpin();
 
-    // Pre-determine final symbols
     const final = [
       SLOTS_SYMBOLS[Math.floor(Math.random() * SLOTS_SYMBOLS.length)],
       SLOTS_SYMBOLS[Math.floor(Math.random() * SLOTS_SYMBOLS.length)],
       SLOTS_SYMBOLS[Math.floor(Math.random() * SLOTS_SYMBOLS.length)],
     ];
 
-    // Start spinning animation for each reel — fresh array of interval IDs
     const intervals: ReturnType<typeof setInterval>[] = [];
     for (let i = 0; i < 3; i++) {
       const id = setInterval(() => {
@@ -72,7 +68,6 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
     }
     spinIntervals.current = intervals;
 
-    // Stop reels one by one with 1s delay (as per spec)
     for (let i = 0; i < 3; i++) {
       await new Promise((r) => setTimeout(r, 1000));
       clearInterval(intervals[i]);
@@ -89,7 +84,6 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
       Sound.reelStop();
     }
 
-    // Evaluate
     setSpinState('evaluating');
     const payout = slotsPayout(final);
     const win = bet * payout * bonusMultiplier;
@@ -105,21 +99,18 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
       Sound.lose();
       setSpinState('lost');
     }
-
     setTimeout(() => setSpinState('idle'), 1800);
   };
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-4">
       <div className="text-center">
-        <h2 className="font-display text-3xl text-gold mb-1">🎰 Slots</h2>
-        <p className="text-xs text-muted-foreground">Spin 3 reels. Match symbols for up to 10×.</p>
+        <h2 className="font-display text-2xl mb-1" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>Slots</h2>
+        <p className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Spin 3 reels. Match symbols for up to 10×.</p>
       </div>
 
       <BetControls balance={balance} bet={bet} setBet={setBet} disabled={spinState === 'spinning'} />
 
-      {/* Reels — using CSS classes for spinning animation instead of Framer Motion's
-          repeat: Infinity, which doesn't stop cleanly on the 2nd+ spin. */}
       <div className="panel p-5">
         <div className="flex justify-center gap-3 mb-3">
           {reels.map((sym, i) => {
@@ -129,20 +120,20 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
               <div
                 key={i}
                 className={cn(
-                  'w-24 h-32 md:w-28 md:h-36 rounded-md flex items-center justify-center text-6xl border-2 transition-colors duration-150',
-                  isSpinning && 'reel-spinning bg-[#0a0a0a] border-[#2a2a2a] blur-[1px]',
-                  isStopped && 'bg-gold bg-opacity-10 border-gold glow-gold',
-                  !isSpinning && !isStopped && 'bg-[#0a0a0a] border-[#2a2a2a]',
+                  'w-24 h-32 md:w-28 md:h-36 rounded-md flex items-center justify-center text-6xl transition-colors',
+                  isSpinning && 'reel-spinning',
                 )}
+                style={{
+                  backgroundColor: isStopped ? 'var(--sf-border)' : 'var(--sf-bg)',
+                  border: '0.5px solid var(--sf-border)',
+                }}
               >
                 {sym}
               </div>
             );
           })}
         </div>
-
-        {/* Paytable hint */}
-        <div className="text-center text-xs text-muted-foreground grid grid-cols-3 gap-1">
+        <div className="text-center text-xs grid grid-cols-3 gap-1" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
           <span>7️⃣7️⃣7️⃣ = 10×</span>
           <span>💎💎💎 = 7×</span>
           <span>⭐⭐⭐ = 5×</span>
@@ -155,13 +146,11 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
       <AnimatePresence>
         {lastPayout > 0 && spinState === 'won' && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className={cn(
-              'text-center font-display text-3xl font-bold py-3 rounded',
-              lastPayout >= 5 ? 'text-gold flash-gold' : 'text-win',
-            )}
+            className="text-center font-display text-2xl py-2 font-mono"
+            style={{ color: lastPayout >= 5 ? 'var(--sf-accent)' : 'var(--sf-win)', fontWeight: 500 }}
           >
             {lastPayout}× — +{formatMoney(lastWin - bet)}
           </motion.div>
@@ -171,7 +160,8 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="text-center text-lose font-display text-2xl py-2"
+            className="text-center text-sm py-2"
+            style={{ color: 'var(--sf-lose)', fontWeight: 400 }}
           >
             No match. Try again!
           </motion.div>
@@ -181,13 +171,11 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
       <button
         onClick={spin}
         disabled={balance < bet || spinState === 'spinning' || timeRemaining <= 3}
-        onMouseEnter={() => Sound.hover()}
-        className={cn(
-          'py-3 rounded-md font-bold transition-all',
-          balance >= bet && spinState !== 'spinning' && timeRemaining > 3
-            ? 'bg-gold hover:bg-gold-dark text-black glow-gold'
-            : 'bg-[#2a2a2a] text-muted-foreground cursor-not-allowed',
-        )}
+        className="btn-premium py-3"
+        style={{
+          cursor: (balance < bet || spinState === 'spinning' || timeRemaining <= 3) ? 'not-allowed' : 'pointer',
+          opacity: (balance < bet || spinState === 'spinning' || timeRemaining <= 3) ? 0.5 : 1,
+        }}
       >
         {spinState === 'spinning' ? 'Spinning...' : balance >= bet ? `Spin (−${formatMoney(bet)})` : 'Not enough balance'}
       </button>

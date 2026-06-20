@@ -37,9 +37,6 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
   const [joinCode, setJoinCode] = useState(init.joinCode);
   const [error, setError] = useState('');
 
-  // Unlock audio on the FIRST user interaction anywhere on the page.
-  // This ensures the AudioContext is resumed before any Sound.* calls,
-  // so the first click on an avatar/button isn't swallowed by audio setup.
   useEffect(() => {
     const unlock = () => { unlockAudio(); };
     window.addEventListener('pointerdown', unlock, { once: true });
@@ -73,63 +70,66 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
     }
   };
 
+  const inputStyle: React.CSSProperties = {
+    backgroundColor: 'var(--sf-bg)',
+    border: '0.5px solid var(--sf-border)',
+    color: 'var(--sf-text)',
+    borderRadius: '6px',
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      {/* Theme picker — top right */}
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-5 right-5">
         <ThemePicker />
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="text-center mb-8"
+        transition={{ duration: 0.4 }}
+        className="text-center mb-10"
       >
-        <h1 className="font-display text-6xl md:text-7xl font-bold shimmer mb-2">
+        <h1 className="font-display text-5xl md:text-6xl mb-3" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>
           StakeFriends
         </h1>
-        <p className="text-lg" style={{ color: 'var(--sf-text-muted)' }}>
+        <p className="text-base" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
           Real-time multiplayer casino. No backend. No accounts.
         </p>
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="panel p-6 w-full max-w-md"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="panel p-7 w-full max-w-md"
       >
-        {/* Mode toggle */}
         {onModeChange && (
-          <div className="mb-4">
-            <div className="flex gap-1 p-1 rounded-md border" style={{ backgroundColor: 'var(--sf-bg-tertiary)', borderColor: 'var(--sf-border)' }}>
+          <div className="mb-6">
+            <div className="flex gap-0.5 p-0.5 rounded-md border" style={{ backgroundColor: 'var(--sf-bg)', borderColor: 'var(--sf-border)' }}>
               <button
                 onClick={() => { onModeChange('multiplayer'); Sound.click(); }}
-                onMouseEnter={() => Sound.hover()}
-                className={cn(
-                  'flex-1 py-1.5 rounded text-xs font-medium transition-all',
-                )}
+                className="flex-1 py-1.5 rounded text-xs transition-colors"
                 style={{
-                  backgroundColor: mode === 'multiplayer' ? 'var(--sf-accent)' : 'transparent',
-                  color: mode === 'multiplayer' ? 'var(--sf-bg)' : 'var(--sf-text-muted)',
+                  backgroundColor: mode === 'multiplayer' ? 'var(--sf-border)' : 'transparent',
+                  color: 'var(--sf-text)',
+                  fontWeight: 400,
                 }}
               >
-                👥 Multiplayer (P2P)
+                Multiplayer (P2P)
               </button>
               <button
                 onClick={() => { onModeChange('solo'); Sound.click(); }}
-                onMouseEnter={() => Sound.hover()}
-                className="flex-1 py-1.5 rounded text-xs font-medium transition-all"
+                className="flex-1 py-1.5 rounded text-xs transition-colors"
                 style={{
-                  backgroundColor: mode === 'solo' ? 'var(--sf-accent)' : 'transparent',
-                  color: mode === 'solo' ? 'var(--sf-bg)' : 'var(--sf-text-muted)',
+                  backgroundColor: mode === 'solo' ? 'var(--sf-border)' : 'transparent',
+                  color: 'var(--sf-text)',
+                  fontWeight: 400,
                 }}
               >
-                🤖 Solo vs Bots
+                Solo vs bots
               </button>
             </div>
-            <p className="text-[10px] text-center mt-1.5" style={{ color: 'var(--sf-text-muted)' }}>
+            <p className="text-xs text-center mt-2" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
               {mode === 'multiplayer'
                 ? 'Play with friends over WebRTC P2P. Requires WebRTC support.'
                 : 'Practice against AI bots. Same game flow, single browser.'}
@@ -137,38 +137,32 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
           </div>
         )}
 
-        <div className="mb-5">
-          <label className="text-sm mb-2 block" style={{ color: 'var(--sf-text-muted)' }}>Nickname</label>
+        <div className="mb-6">
+          <label className="text-xs mb-2 block" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Nickname</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value.slice(0, 16))}
             placeholder="Enter your name"
-            className="w-full rounded-md px-4 py-2.5 focus:outline-none transition-colors"
-            style={{
-              backgroundColor: 'var(--sf-bg-tertiary)',
-              border: '1px solid var(--sf-border)',
-              color: 'var(--sf-text)',
-            }}
+            className="w-full px-3.5 py-2.5 focus:outline-none transition-colors"
+            style={inputStyle}
             maxLength={16}
           />
         </div>
 
-        <div className="mb-5">
-          <label className="text-sm mb-2 block" style={{ color: 'var(--sf-text-muted)' }}>Avatar</label>
-          <div className="grid grid-cols-8 gap-1.5">
+        <div className="mb-6">
+          <label className="text-xs mb-2 block" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Avatar</label>
+          <div className="grid grid-cols-8 gap-1">
             {AVATARS.map((a) => (
               <button
                 key={a}
-                onClick={() => { setAvatar(a); Sound.hover(); }}
-                onMouseEnter={() => Sound.hover()}
+                onClick={() => { setAvatar(a); Sound.click(); }}
                 className={cn(
-                  'aspect-square rounded-md text-2xl flex items-center justify-center transition-all',
+                  'aspect-square rounded-md text-xl flex items-center justify-center transition-colors',
                 )}
                 style={{
-                  backgroundColor: avatar === a ? `rgba(var(--sf-accent-rgb), 0.2)` : 'var(--sf-bg-tertiary)',
-                  border: avatar === a ? '2px solid var(--sf-accent)' : '1px solid var(--sf-border)',
-                  transform: avatar === a ? 'scale(1.05)' : 'scale(1)',
+                  backgroundColor: avatar === a ? 'var(--sf-border)' : 'var(--sf-bg)',
+                  border: '0.5px solid var(--sf-border)',
                 }}
               >
                 {a}
@@ -178,27 +172,29 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
         </div>
 
         {mode === 'multiplayer' && (
-          <div className="mb-5">
-            <div className="flex gap-2 p-1 rounded-md border" style={{ backgroundColor: 'var(--sf-bg-tertiary)', borderColor: 'var(--sf-border)' }}>
+          <div className="mb-6">
+            <div className="flex gap-0.5 p-0.5 rounded-md border" style={{ backgroundColor: 'var(--sf-bg)', borderColor: 'var(--sf-border)' }}>
               <button
                 onClick={() => { setAction('create'); Sound.click(); }}
-                className="flex-1 py-2 rounded text-sm font-medium transition-all"
+                className="flex-1 py-1.5 rounded text-xs transition-colors"
                 style={{
-                  backgroundColor: action === 'create' ? 'var(--sf-accent)' : 'transparent',
-                  color: action === 'create' ? 'var(--sf-bg)' : 'var(--sf-text-muted)',
+                  backgroundColor: action === 'create' ? 'var(--sf-border)' : 'transparent',
+                  color: 'var(--sf-text)',
+                  fontWeight: 400,
                 }}
               >
-                Create Room
+                Create room
               </button>
               <button
                 onClick={() => { setAction('join'); Sound.click(); }}
-                className="flex-1 py-2 rounded text-sm font-medium transition-all"
+                className="flex-1 py-1.5 rounded text-xs transition-colors"
                 style={{
-                  backgroundColor: action === 'join' ? 'var(--sf-accent)' : 'transparent',
-                  color: action === 'join' ? 'var(--sf-bg)' : 'var(--sf-text-muted)',
+                  backgroundColor: action === 'join' ? 'var(--sf-border)' : 'transparent',
+                  color: 'var(--sf-text)',
+                  fontWeight: 400,
                 }}
               >
-                Join Room
+                Join room
               </button>
             </div>
           </div>
@@ -210,20 +206,16 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mb-5 overflow-hidden"
+              className="mb-6 overflow-hidden"
             >
-              <label className="text-sm mb-2 block" style={{ color: 'var(--sf-text-muted)' }}>Room Code</label>
+              <label className="text-xs mb-2 block" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Room code</label>
               <input
                 type="text"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
                 placeholder="ABCDEF"
-                className="w-full rounded-md px-4 py-2.5 text-center text-2xl tracking-[0.5em] font-mono uppercase focus:outline-none transition-colors"
-                style={{
-                  backgroundColor: 'var(--sf-bg-tertiary)',
-                  border: '1px solid var(--sf-border)',
-                  color: 'var(--sf-text)',
-                }}
+                className="w-full px-3.5 py-2.5 text-center text-xl tracking-[0.4em] font-mono uppercase focus:outline-none transition-colors"
+                style={inputStyle}
                 maxLength={6}
               />
             </motion.div>
@@ -231,24 +223,24 @@ export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeCh
         </AnimatePresence>
 
         {error && (
-          <div className="text-sm mb-3 text-center" style={{ color: 'var(--sf-lose)' }}>{error}</div>
+          <div className="text-sm mb-3 text-center" style={{ color: 'var(--sf-lose)', fontWeight: 400 }}>{error}</div>
         )}
 
         <button
           onClick={handleSubmit}
-          onMouseEnter={() => Sound.hover()}
-          className="btn-premium w-full py-3 font-bold"
+          className="btn-premium w-full py-3"
+          style={{ fontSize: '14px' }}
         >
-          {mode === 'solo' ? 'Start Solo Game' : action === 'create' ? 'Create Room' : 'Join Room'}
+          {mode === 'solo' ? 'Start solo game' : action === 'create' ? 'Create room' : 'Join room'}
         </button>
       </motion.div>
 
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="mt-6 text-center text-xs max-w-md"
-        style={{ color: 'var(--sf-text-muted)' }}
+        transition={{ delay: 0.3 }}
+        className="mt-8 text-center text-xs max-w-md leading-relaxed"
+        style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}
       >
         {mode === 'multiplayer' ? (
           <>

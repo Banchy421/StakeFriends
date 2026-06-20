@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { kenoDraw, KENO_PAYOUTS, mulberry32 } from '@/lib/utils-casino';
+import { kenoDraw, KENO_PAYOUTS } from '@/lib/utils-casino';
 import { Sound } from '@/lib/sounds';
 import { formatMoney } from '@/lib/utils-casino';
 import { BetControls } from './BetControls';
@@ -50,7 +50,6 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
     if (balance < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     if (picked.size !== 10) { Sound.error(); return; }
-
     Sound.bet();
     onBalanceChange(balance - bet);
     setPhase('drawing');
@@ -58,10 +57,8 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
     setMatches(0);
     setWinAmount(0);
     setDrawIndex(0);
-
     const drawNumber = Math.floor(Math.random() * 1000);
     const allDrawn = kenoDraw((seed ^ Date.now() ^ drawNumber) >>> 0, drawNumber);
-    // Reveal one at a time
     for (let i = 0; i < allDrawn.length; i++) {
       const id = setTimeout(() => {
         setDrawIndex(i + 1);
@@ -75,8 +72,6 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
       }, i * 300);
       timeoutsRef.current.push(id);
     }
-
-    // After all drawn, compute win
     const finalId = setTimeout(() => {
       const matchCount = allDrawn.filter((n) => picked.has(n)).length;
       const payout = KENO_PAYOUTS[matchCount] || 0;
@@ -103,31 +98,29 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col gap-4">
       <div className="text-center">
-        <h2 className="font-display text-3xl text-gold mb-1">🔢 Keno</h2>
-        <p className="text-xs text-muted-foreground">Pick 10 numbers. Match the draw for up to 1000×.</p>
+        <h2 className="font-display text-2xl mb-1" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>Keno</h2>
+        <p className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Pick 10 numbers. Match the draw for up to 1000×.</p>
       </div>
 
       <BetControls balance={balance} bet={bet} setBet={setBet} disabled={phase !== 'idle'} />
 
-      {/* Status */}
-      <div className="panel p-3 flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">
-          Picked: <span className={cn('font-mono', picked.size === 10 ? 'text-win' : 'text-gold')}>{picked.size}/10</span>
+      <div className="panel p-3 flex items-center justify-between text-sm" style={{ fontWeight: 400 }}>
+        <span style={{ color: 'var(--sf-text-muted)' }}>
+          Picked: <span className="font-mono" style={{ color: picked.size === 10 ? 'var(--sf-win)' : 'var(--sf-text)' }}>{picked.size}/10</span>
         </span>
         {phase === 'drawing' && (
-          <span className="text-gold">Drawing... {drawIndex}/20</span>
+          <span style={{ color: 'var(--sf-text)' }}>Drawing... {drawIndex}/20</span>
         )}
         {phase === 'done' && (
-          <span className={cn('font-bold', winAmount > 0 ? 'text-win' : 'text-lose')}>
+          <span style={{ color: winAmount > 0 ? 'var(--sf-win)' : 'var(--sf-lose)', fontWeight: 500 }}>
             {matches} matches — {winAmount > 0 ? `+${formatMoney(winAmount - bet)}` : `−${formatMoney(bet)}`}
           </span>
         )}
         {phase === 'idle' && picked.size === 10 && (
-          <span className="text-win">Ready to draw!</span>
+          <span style={{ color: 'var(--sf-win)' }}>Ready to draw</span>
         )}
       </div>
 
-      {/* Number grid */}
       <div className="panel p-3">
         <div className="grid grid-cols-8 gap-1.5">
           {Array.from({ length: 40 }, (_, i) => i + 1).map((n) => {
@@ -140,17 +133,17 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
                 layout
                 onClick={() => togglePick(n)}
                 disabled={phase !== 'idle'}
-                whileHover={phase === 'idle' ? { scale: 1.1 } : {}}
-                whileTap={phase === 'idle' ? { scale: 0.95 } : {}}
-                animate={match_ ? { scale: [1, 1.2, 1] } : {}}
+                whileHover={phase === 'idle' ? { scale: 1.08 } : {}}
+                whileTap={phase === 'idle' ? { scale: 0.92 } : {}}
+                animate={match_ ? { scale: [1, 1.15, 1] } : {}}
                 transition={{ duration: 0.3 }}
-                className={cn(
-                  'aspect-square rounded-md font-mono text-sm font-bold flex items-center justify-center border-2 transition-all',
-                  match_ && 'bg-gold border-gold text-black glow-gold',
-                  picked_ && !drawn_ && 'bg-gold bg-opacity-20 border-gold text-gold',
-                  drawn_ && !picked_ && 'bg-lose bg-opacity-20 border-lose text-lose',
-                  !picked_ && !drawn_ && 'bg-[#0a0a0a] border-[#2a2a2a] text-muted-foreground hover:border-gold hover:text-white',
-                )}
+                className="aspect-square rounded-md font-mono text-sm flex items-center justify-center transition-colors"
+                style={{
+                  backgroundColor: match_ ? 'var(--sf-accent)' : picked_ ? 'var(--sf-border)' : drawn_ ? 'var(--sf-bg-secondary)' : 'var(--sf-bg)',
+                  border: '0.5px solid var(--sf-border)',
+                  color: match_ ? 'var(--sf-text)' : picked_ ? 'var(--sf-text)' : drawn_ ? 'var(--sf-lose)' : 'var(--sf-text-muted)',
+                  fontWeight: 400,
+                }}
               >
                 {n}
               </motion.button>
@@ -159,9 +152,8 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
         </div>
       </div>
 
-      {/* Paytable */}
       <div className="panel p-3">
-        <div className="text-xs text-muted-foreground uppercase tracking-widest mb-2 text-center">Payout Table (×bet)</div>
+        <div className="text-xs mb-2 text-center" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Payout table (×bet)</div>
         <div className="grid grid-cols-5 gap-1 text-xs">
           {[
             { m: '0–2', p: '0×' },
@@ -174,9 +166,9 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
             { m: '9', p: '200×' },
             { m: '10', p: '1000×' },
           ].map((row) => (
-            <div key={row.m} className="text-center p-1.5 bg-[#0a0a0a] rounded">
-              <div className="text-muted-foreground">{row.m}</div>
-              <div className="text-gold font-mono font-bold">{row.p}</div>
+            <div key={row.m} className="text-center p-1.5 rounded-md" style={{ backgroundColor: 'var(--sf-bg)', border: '0.5px solid var(--sf-border)' }}>
+              <div style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>{row.m}</div>
+              <div className="font-mono" style={{ color: 'var(--sf-text)', fontWeight: 400 }}>{row.p}</div>
             </div>
           ))}
         </div>
@@ -185,13 +177,11 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
       <button
         onClick={play}
         disabled={balance < bet || phase !== 'idle' || picked.size !== 10 || timeRemaining <= 3}
-        onMouseEnter={() => Sound.hover()}
-        className={cn(
-          'py-3 rounded-md font-bold transition-all',
-          balance >= bet && phase === 'idle' && picked.size === 10 && timeRemaining > 3
-            ? 'bg-gold hover:bg-gold-dark text-black glow-gold'
-            : 'bg-[#2a2a2a] text-muted-foreground cursor-not-allowed',
-        )}
+        className="btn-premium py-3"
+        style={{
+          opacity: (balance < bet || phase !== 'idle' || picked.size !== 10 || timeRemaining <= 3) ? 0.5 : 1,
+          cursor: (balance < bet || phase !== 'idle' || picked.size !== 10 || timeRemaining <= 3) ? 'not-allowed' : 'pointer',
+        }}
       >
         {phase === 'drawing' ? 'Drawing...' :
          phase === 'done' ? 'Round ended' :

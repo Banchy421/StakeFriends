@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { minesMultiplier, mulberry32 } from '@/lib/utils-casino';
 import { Sound } from '@/lib/sounds';
@@ -47,7 +47,6 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
     if (timeRemaining <= 3) { Sound.error(); return; }
     Sound.bet();
     onBalanceChange(balance - bet);
-    // Seeded mine placement
     const rng = mulberry32((seed ^ Date.now()) >>> 0);
     const positions = new Set<number>();
     while (positions.size < mineCount) {
@@ -69,13 +68,10 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
     newRevealed.add(idx);
 
     if (game.minePositions.has(idx)) {
-      // Hit a mine — lose
       Sound.explosion();
       setGame({ ...game, status: 'lost', revealed: newRevealed });
       setTimeout(() => {
-        setGame({
-          status: 'idle', mineCount, minePositions: new Set(), revealed: new Set(), bet,
-        });
+        setGame({ status: 'idle', mineCount, minePositions: new Set(), revealed: new Set(), bet });
       }, 3000);
     } else {
       Sound.gem();
@@ -91,36 +87,30 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
     Sound.cashRegister();
     setGame({ ...game, status: 'won' });
     setTimeout(() => {
-      setGame({
-        status: 'idle', mineCount, minePositions: new Set(), revealed: new Set(), bet,
-      });
+      setGame({ status: 'idle', mineCount, minePositions: new Set(), revealed: new Set(), bet });
     }, 2500);
   };
 
-  const tiles: { idx: number; isMine: boolean; isRevealed: boolean }[] = Array.from(
-    { length: TILES },
-    (_, i) => ({
-      idx: i,
-      isMine: game.minePositions.has(i),
-      isRevealed: game.revealed.has(i),
-    }),
-  );
+  const tiles = Array.from({ length: TILES }, (_, i) => ({
+    idx: i,
+    isMine: game.minePositions.has(i),
+    isRevealed: game.revealed.has(i),
+  }));
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-4">
       <div className="text-center">
-        <h2 className="font-display text-3xl text-gold mb-1">💣 Mines</h2>
-        <p className="text-xs text-muted-foreground">Reveal gems, avoid mines. More mines = bigger multipliers.</p>
+        <h2 className="font-display text-2xl mb-1" style={{ fontWeight: 500, color: 'var(--sf-text)' }}>Mines</h2>
+        <p className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Reveal gems, avoid mines. More mines = bigger multipliers.</p>
       </div>
 
       <BetControls balance={balance} bet={bet} setBet={setBet} disabled={game.status === 'playing'} />
 
-      {/* Mine count selector */}
       {game.status === 'idle' && (
-        <div className="panel p-3 space-y-2">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Number of Mines</span>
-            <span className="text-gold font-mono">{mineCount}</span>
+        <div className="panel p-3.5 space-y-2.5">
+          <div className="flex items-center justify-between text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+            <span>Number of mines</span>
+            <span className="font-mono" style={{ color: 'var(--sf-text)' }}>{mineCount}</span>
           </div>
           <input
             type="range"
@@ -128,17 +118,17 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
             max={10}
             value={mineCount}
             onChange={(e) => { setMineCount(parseInt(e.target.value, 10)); Sound.hover(); }}
-            className="w-full accent-[#C9A84C]"
+            className="w-full"
+            style={{ accentColor: 'var(--sf-accent)' }}
           />
-          <div className="text-xs text-muted-foreground text-center">
-            Next safe pick: <span className="text-gold font-mono">{minesMultiplier(game.revealed.size + 1, mineCount).toFixed(2)}×</span>
+          <div className="text-xs text-center" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+            Next safe pick: <span className="font-mono" style={{ color: 'var(--sf-text)' }}>{minesMultiplier(game.revealed.size + 1, mineCount).toFixed(2)}×</span>
           </div>
         </div>
       )}
 
-      {/* Game grid */}
       <div className="panel p-3">
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-5 gap-1.5">
           {tiles.map((tile) => {
             const showMine = (tile.isMine && (tile.isRevealed || game.status === 'lost'));
             const showGem = tile.isRevealed && !tile.isMine;
@@ -148,19 +138,22 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
                 layout
                 onClick={() => revealTile(tile.idx)}
                 disabled={game.status !== 'playing' || tile.isRevealed}
-                whileHover={game.status === 'playing' && !tile.isRevealed ? { scale: 1.05 } : {}}
-                whileTap={game.status === 'playing' && !tile.isRevealed ? { scale: 0.95 } : {}}
+                whileHover={game.status === 'playing' && !tile.isRevealed ? { scale: 1.03 } : {}}
+                whileTap={game.status === 'playing' && !tile.isRevealed ? { scale: 0.97 } : {}}
                 className={cn(
-                  'aspect-square rounded-md flex items-center justify-center text-2xl border transition-all',
-                  !tile.isRevealed && 'bg-[#0a0a0a] border-[#2a2a2a] hover:border-gold',
-                  showGem && 'bg-win bg-opacity-20 border-win',
-                  showMine && 'bg-lose bg-opacity-30 border-lose shake',
+                  'aspect-square rounded-md flex items-center justify-center text-2xl transition-colors',
+                  showMine && 'shake',
                 )}
+                style={{
+                  backgroundColor: showGem ? 'var(--sf-win)' : showMine ? 'var(--sf-lose)' : 'var(--sf-bg)',
+                  border: '0.5px solid var(--sf-border)',
+                  color: 'var(--sf-bg)',
+                }}
               >
                 <AnimatePresence mode="wait">
                   {showGem && (
                     <motion.span
-                      initial={{ scale: 0, rotate: -180 }}
+                      initial={{ scale: 0, rotate: -90 }}
                       animate={{ scale: 1, rotate: 0 }}
                       transition={{ type: 'spring', stiffness: 300 }}
                     >
@@ -183,53 +176,47 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex gap-2">
         {game.status === 'idle' && (
           <button
             onClick={startGame}
             disabled={balance < bet || timeRemaining <= 3}
-            onMouseEnter={() => Sound.hover()}
-            className={cn(
-              'flex-1 py-3 rounded-md font-bold transition-all',
-              balance >= bet && timeRemaining > 3
-                ? 'bg-gold hover:bg-gold-dark text-black glow-gold'
-                : 'bg-[#2a2a2a] text-muted-foreground cursor-not-allowed',
-            )}
+            className="btn-premium flex-1 py-3"
+            style={{ opacity: (balance < bet || timeRemaining <= 3) ? 0.5 : 1, cursor: (balance < bet || timeRemaining <= 3) ? 'not-allowed' : 'pointer' }}
           >
             {balance >= bet ? `Start (−${formatMoney(bet)})` : 'Not enough balance'}
           </button>
         )}
         {game.status === 'playing' && (
           <>
-            <div className="flex-1 panel p-3 text-center">
-              <div className="text-xs text-muted-foreground">Current Multiplier</div>
-              <div className="font-display text-2xl text-gold">{currentMult.toFixed(2)}×</div>
-              <div className="text-xs text-win font-mono">+{formatMoney(profit)}</div>
+            <div className="panel p-3 text-center flex-1">
+              <div className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Current multiplier</div>
+              <div className="font-display text-xl font-mono" style={{ color: 'var(--sf-text)', fontWeight: 500 }}>{currentMult.toFixed(2)}×</div>
+              <div className="text-xs font-mono" style={{ color: 'var(--sf-win)', fontWeight: 400 }}>+{formatMoney(profit)}</div>
             </div>
             <button
               onClick={cashOut}
               disabled={game.revealed.size === 0}
-              onMouseEnter={() => Sound.hover()}
-              className={cn(
-                'flex-1 py-3 rounded-md font-bold transition-all',
-                game.revealed.size > 0
-                  ? 'bg-win hover:bg-green-700 text-white glow-win'
-                  : 'bg-[#2a2a2a] text-muted-foreground cursor-not-allowed',
-              )}
+              className="flex-1 py-3 rounded-md transition-colors"
+              style={{
+                backgroundColor: game.revealed.size > 0 ? 'var(--sf-win)' : 'var(--sf-border)',
+                color: 'var(--sf-bg)',
+                fontWeight: 400,
+                cursor: game.revealed.size > 0 ? 'pointer' : 'not-allowed',
+              }}
             >
-              {game.revealed.size > 0 ? `Cash Out (${formatMoney(cashOutAmount)})` : 'Reveal to cash out'}
+              {game.revealed.size > 0 ? `Cash out (${formatMoney(cashOutAmount)})` : 'Reveal to cash out'}
             </button>
           </>
         )}
         {game.status === 'lost' && (
-          <div className="flex-1 py-3 rounded-md font-bold bg-lose text-white text-center">
-            💥 Boom! Lost {formatMoney(bet)}
+          <div className="flex-1 py-3 rounded-md text-center" style={{ backgroundColor: 'var(--sf-lose)', color: 'var(--sf-bg)', fontWeight: 400 }}>
+            Boom! Lost {formatMoney(bet)}
           </div>
         )}
         {game.status === 'won' && (
-          <div className="flex-1 py-3 rounded-md font-bold bg-win text-white text-center">
-            💰 Cashed out: +{formatMoney(profit)}
+          <div className="flex-1 py-3 rounded-md text-center" style={{ backgroundColor: 'var(--sf-win)', color: 'var(--sf-bg)', fontWeight: 400 }}>
+            Cashed out: +{formatMoney(profit)}
           </div>
         )}
       </div>

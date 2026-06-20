@@ -8,133 +8,133 @@ export interface Theme {
   icon: string;
   description: string;
   colors: {
-    bg: string;           // page background
-    bgSecondary: string;  // panels
-    bgTertiary: string;   // inputs, nested panels
-    border: string;       // borders
-    accent: string;       // primary accent (gold equivalent)
-    accentDark: string;   // hover state
-    accentRgb: string;    // RGB values for rgba() usage
-    win: string;          // win green
-    lose: string;         // lose red
-    text: string;         // main text
-    textMuted: string;    // muted text
-    glow: string;         // glow shadow color
+    bg: string;
+    bgSecondary: string;
+    bgTertiary: string;
+    border: string;
+    accent: string;
+    accentDark: string;
+    accentRgb: string;
+    win: string;
+    lose: string;
+    text: string;
+    textMuted: string;
+    glow: string;
   };
-  gradient: string;       // background gradient
-  panelGradient: string;  // panel background gradient
+  gradient: string;
+  panelGradient: string;
 }
 
 export const THEMES: Theme[] = [
   {
-    id: 'casino-gold',
-    name: 'Casino Gold',
-    icon: '🎰',
-    description: 'Classic casino — deep black with gold accents',
+    id: 'linen',
+    name: 'Linen',
+    icon: '○',
+    description: 'Warm beige with soft neutrals',
     colors: {
-      bg: '#0a0a0a',
-      bgSecondary: '#1a1a1a',
-      bgTertiary: '#0a0a0a',
-      border: '#2a2a2a',
-      accent: '#C9A84C',
-      accentDark: '#8a6f2c',
-      accentRgb: '201, 168, 76',
-      win: '#38A169',
-      lose: '#E53E3E',
-      text: '#f5f5f5',
-      textMuted: '#8a8a8a',
-      glow: 'rgba(201, 168, 76, 0.5)',
+      bg: '#F7F4EF',
+      bgSecondary: '#EFE9E0',
+      bgTertiary: '#F7F4EF',
+      border: '#DDD6CA',
+      accent: '#B8A898',
+      accentDark: '#A39485',
+      accentRgb: '184, 168, 152',
+      win: '#6B8E5A',
+      lose: '#B85C5C',
+      text: '#2A2724',
+      textMuted: '#7D756C',
+      glow: 'transparent',
     },
-    gradient: 'radial-gradient(at 20% 20%, rgba(201, 168, 76, 0.05) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(229, 62, 62, 0.03) 0px, transparent 50%)',
-    panelGradient: 'linear-gradient(135deg, #1a1a1a 0%, #161616 100%)',
+    gradient: 'none',
+    panelGradient: 'none',
   },
   {
-    id: 'neon-cyber',
-    name: 'Neon Cyber',
-    icon: '🌃',
-    description: 'Futuristic neon — dark blue with cyan & magenta',
+    id: 'slate',
+    name: 'Slate',
+    icon: '○',
+    description: 'Cool grey with muted blue accent',
     colors: {
-      bg: '#050510',
-      bgSecondary: '#0d0d20',
-      bgTertiary: '#050510',
-      border: '#1a1a35',
-      accent: '#00e5ff',
-      accentDark: '#0099b8',
-      accentRgb: '0, 229, 255',
-      win: '#00ff88',
-      lose: '#ff0055',
-      text: '#e0e0ff',
-      textMuted: '#6a6a8a',
-      glow: 'rgba(0, 229, 255, 0.5)',
+      bg: '#F5F6F7',
+      bgSecondary: '#E8EAED',
+      bgTertiary: '#F5F6F7',
+      border: '#D1D5DB',
+      accent: '#9CA3AF',
+      accentDark: '#6B7280',
+      accentRgb: '156, 163, 175',
+      win: '#6B8E5A',
+      lose: '#B85C5C',
+      text: '#25282B',
+      textMuted: '#6B7280',
+      glow: 'transparent',
     },
-    gradient: 'radial-gradient(at 20% 20%, rgba(0, 229, 255, 0.06) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(255, 0, 85, 0.04) 0px, transparent 50%)',
-    panelGradient: 'linear-gradient(135deg, #0d0d20 0%, #0a0a18 100%)',
+    gradient: 'none',
+    panelGradient: 'none',
   },
   {
-    id: 'royal-purple',
-    name: 'Royal Purple',
-    icon: '👑',
-    description: 'Regal elegance — deep purple with violet & gold',
+    id: 'sage',
+    name: 'Sage',
+    icon: '○',
+    description: 'Soft green-grey with botanical accent',
     colors: {
-      bg: '#0d0813',
-      bgSecondary: '#1a1228',
-      bgTertiary: '#0d0813',
-      border: '#2a1f3d',
-      accent: '#a855f7',
-      accentDark: '#7c3aed',
-      accentRgb: '168, 85, 247',
-      win: '#22c55e',
-      lose: '#ef4444',
-      text: '#f0e6ff',
-      textMuted: '#8a7a9a',
-      glow: 'rgba(168, 85, 247, 0.5)',
+      bg: '#F4F5F1',
+      bgSecondary: '#E8EBE2',
+      bgTertiary: '#F4F5F1',
+      border: '#D0D5C7',
+      accent: '#9DA886',
+      accentDark: '#7D8A66',
+      accentRgb: '157, 168, 134',
+      win: '#6B8E5A',
+      lose: '#B85C5C',
+      text: '#2A2D26',
+      textMuted: '#7A7E6E',
+      glow: 'transparent',
     },
-    gradient: 'radial-gradient(at 20% 20%, rgba(168, 85, 247, 0.06) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(201, 168, 76, 0.03) 0px, transparent 50%)',
-    panelGradient: 'linear-gradient(135deg, #1a1228 0%, #150f20 100%)',
+    gradient: 'none',
+    panelGradient: 'none',
   },
   {
-    id: 'ocean-blue',
-    name: 'Midnight Ocean',
-    icon: '🌊',
-    description: 'Deep sea vibes — dark teal with aqua & coral',
+    id: 'clay',
+    name: 'Clay',
+    icon: '○',
+    description: 'Warm terracotta with muted clay accent',
     colors: {
-      bg: '#04101a',
-      bgSecondary: '#0a1a28',
-      bgTertiary: '#04101a',
-      border: '#15293d',
-      accent: '#06b6d4',
-      accentDark: '#0891b2',
-      accentRgb: '6, 182, 212',
-      win: '#10b981',
-      lose: '#f43f5e',
-      text: '#e0f0ff',
-      textMuted: '#6a8a9a',
-      glow: 'rgba(6, 182, 212, 0.5)',
+      bg: '#F6F3EF',
+      bgSecondary: '#EAE3DC',
+      bgTertiary: '#F6F3EF',
+      border: '#DBCFC4',
+      accent: '#B89B86',
+      accentDark: '#9A8068',
+      accentRgb: '184, 155, 134',
+      win: '#6B8E5A',
+      lose: '#B85C5C',
+      text: '#2B2620',
+      textMuted: '#7D726A',
+      glow: 'transparent',
     },
-    gradient: 'radial-gradient(at 20% 20%, rgba(6, 182, 212, 0.06) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(244, 63, 94, 0.03) 0px, transparent 50%)',
-    panelGradient: 'linear-gradient(135deg, #0a1a28 0%, #08141f 100%)',
+    gradient: 'none',
+    panelGradient: 'none',
   },
   {
-    id: 'emerald',
-    name: 'Emerald',
-    icon: '💚',
-    description: 'Fresh & clean — dark green with emerald & lime',
+    id: 'ink',
+    name: 'Ink',
+    icon: '○',
+    description: 'Dark charcoal with muted silver accent',
     colors: {
-      bg: '#04120a',
-      bgSecondary: '#0a1f14',
-      bgTertiary: '#04120a',
-      border: '#153020',
-      accent: '#10b981',
-      accentDark: '#059669',
-      accentRgb: '16, 185, 129',
-      win: '#22c55e',
-      lose: '#ef4444',
-      text: '#e0ffe8',
-      textMuted: '#6a9a7a',
-      glow: 'rgba(16, 185, 129, 0.5)',
+      bg: '#2A2724',
+      bgSecondary: '#33302C',
+      bgTertiary: '#2A2724',
+      border: '#45413C',
+      accent: '#A89B8C',
+      accentDark: '#8C8070',
+      accentRgb: '168, 155, 140',
+      win: '#7A9D6A',
+      lose: '#C47070',
+      text: '#E8E3DC',
+      textMuted: '#9A9088',
+      glow: 'transparent',
     },
-    gradient: 'radial-gradient(at 20% 20%, rgba(16, 185, 129, 0.06) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(239, 68, 68, 0.02) 0px, transparent 50%)',
-    panelGradient: 'linear-gradient(135deg, #0a1f14 0%, #081810 100%)',
+    gradient: 'none',
+    panelGradient: 'none',
   },
 ];
 
@@ -148,8 +148,13 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themeId, setThemeIdState] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'casino-gold';
-    return localStorage.getItem('sf-theme') || 'casino-gold';
+    if (typeof window === 'undefined') return 'linen';
+    const saved = localStorage.getItem('sf-theme');
+    // Migrate old theme IDs to new ones
+    if (saved === 'casino-gold' || saved === 'neon-cyber' || saved === 'royal-purple' || saved === 'ocean-blue' || saved === 'emerald') {
+      return 'linen';
+    }
+    return saved || 'linen';
   });
 
   const theme = THEMES.find((t) => t.id === themeId) ?? THEMES[0];
@@ -161,7 +166,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Apply theme CSS variables to :root
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
@@ -192,7 +196,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 export function useTheme() {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
-    // Fallback if used outside provider (shouldn't happen)
     return { theme: THEMES[0], setThemeId: () => {}, themes: THEMES };
   }
   return ctx;
