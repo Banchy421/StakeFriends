@@ -81,6 +81,73 @@ export function useGameState(): UseGameStateApi {
 
   useEffect(() => { stateRef.current = state; }, [state]);
 
+  // Save state to localStorage for refresh persistence
+  useEffect(() => {
+    if (state && roomCode) {
+      try {
+        localStorage.setItem('sf-game-state', JSON.stringify(state));
+        localStorage.setItem('sf-room-code', roomCode);
+        localStorage.setItem('sf-is-host', isHost ? '1' : '0');
+        if (selfRef.current) {
+          localStorage.setItem('sf-self-player', JSON.stringify(selfRef.current));
+        }
+      } catch {}
+    }
+  }, [state, roomCode, isHost]);
+
+  // Restore state on mount (for refresh persistence)
+  useEffect(() => {
+    try {
+      const savedState = localStorage.getItem('sf-game-state');
+      const savedRoomCode = localStorage.getItem('sf-room-code');
+      const savedIsHost = localStorage.getItem('sf-is-host') === '1';
+      const savedSelf = localStorage.getItem('sf-self-player');
+      if (savedState && savedRoomCode) {
+        const parsedState = JSON.parse(savedState) as GameState;
+        const parsedSelf = savedSelf ? JSON.parse(savedSelf) as Player : null;
+        // Defer state updates to avoid cascading renders
+        queueMicrotask(() => {
+          stateRef.current = parsedState;
+          if (parsedSelf) selfRef.current = parsedSelf;
+          setState(parsedState);
+          setRoomCode(savedRoomCode);
+          setIsHost(savedIsHost);
+          if (parsedSelf) setSelfId(parsedSelf.id);
+          setConnectionStatus(savedIsHost ? 'connected' : 'connecting');
+        });
+        // Reconnect to the P2P room
+        if (parsedSelf) {
+          import('@/lib/p2p').then(({ joinGameRoom }) => {
+            const p2p = joinGameRoom(savedRoomCode) as unknown as P2PApi;
+            p2pRef.current = p2p;
+            p2p.onState(applyRemoteState);
+            p2p.onAction(handleAction);
+            p2p.onHostCommand(handleHostCommand);
+            p2p.onPeerJoin((peerId) => {
+              Sound.join();
+              setConnectionStatus('connected');
+              const cur = stateRef.current;
+              if (cur && savedIsHost) {
+                void p2p.sendState(cur, [peerId]);
+              }
+            });
+            p2p.onPeerLeave((peerId) => {
+              Sound.leave();
+              const cur = stateRef.current;
+              if (cur && cur.hostId === p2p.selfId) {
+                void broadcast(removePlayer(cur, peerId));
+              }
+            });
+            // Send join action to re-announce ourselves
+            setTimeout(() => {
+              void p2p.sendAction({ type: 'join', name: parsedSelf.name, avatar: parsedSelf.avatar });
+            }, 500);
+          });
+        }
+      }
+    } catch {}
+  }, []);
+
   /** Broadcast state to all peers (host only). */
   const broadcast = useCallback(async (next: GameState) => {
     setState(next);
@@ -136,6 +203,9 @@ export function useGameState(): UseGameStateApi {
         break;
       }
       case 'final-vote': {
+        // Guard: if we're no longer in final-vote phase, ignore late votes
+        // (prevents race condition when both players vote simultaneously)
+        if (next.phase !== 'final-vote') break;
         const choices = { ...next.finalVoteChoices, [peerId]: action.game };
         next = { ...next, finalVoteChoices: choices };
         // Auto-resolve if all active players have voted (don't wait for timer)
@@ -379,6 +449,13 @@ export function useGameState(): UseGameStateApi {
     setIsHost(false);
     setSelfId('');
     setConnectionStatus('idle');
+    // Clear persisted state
+    try {
+      localStorage.removeItem('sf-game-state');
+      localStorage.removeItem('sf-room-code');
+      localStorage.removeItem('sf-is-host');
+      localStorage.removeItem('sf-self-player');
+    } catch {}
   }, []);
 
   // HOST ACTIONS

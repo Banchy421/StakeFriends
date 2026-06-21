@@ -48,6 +48,8 @@ export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemainin
   const ballBodiesRef = useRef<Map<number, { body: Matter.Body; ball: Ball }>>(new Map());
   const pegsRef = useRef<Matter.Body[]>([]);
   const wallsRef = useRef<Matter.Body[]>([]);
+  const balanceRef = useRef(balance);
+  useEffect(() => { balanceRef.current = balance; }, [balance]);
 
   // Set up Matter.js engine once
   useEffect(() => {
@@ -146,13 +148,14 @@ export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemainin
           ball.bucket = bucketIndex;
           // Resolve win
           const mult = PLINKO_BUCKETS[bucketIndex];
-          const win = bet * mult * bonusMultiplier;
+          const totalReturn = bet * mult * bonusMultiplier;
+          const profit = totalReturn - bet;
           // Update state outside loop
           setTimeout(() => {
-            setLastWin(win);
+            setLastWin(profit);
             setLastWinBucket(bucketIndex);
             setLandedBucket(bucketIndex);
-            onBalanceChange(balance + win);
+            onBalanceChange(balanceRef.current + totalReturn);
             if (mult >= 5) Sound.winBig();
             else if (mult >= 1) Sound.winSmall();
             else Sound.lose();
@@ -247,7 +250,7 @@ export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemainin
     if (balance < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     Sound.bet();
-    onBalanceChange(balance - bet);
+    onBalanceChange(balanceRef.current - bet);
 
     const id = ballIdRef.current++;
     const startX = WIDTH / 2 + (Math.random() - 0.5) * 20;
@@ -290,15 +293,15 @@ export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemainin
       </div>
 
       <AnimatePresence>
-        {lastWin > 0 && lastWinBucket !== null && (
+        {lastWin !== 0 && lastWinBucket !== null && (
           <motion.div
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             className="text-center font-display text-xl py-2 font-mono"
-            style={{ color: lastWin >= bet ? 'var(--sf-win)' : 'var(--sf-lose)', fontWeight: 500 }}
+            style={{ color: lastWin > 0 ? 'var(--sf-win)' : 'var(--sf-lose)', fontWeight: 500 }}
           >
-            {PLINKO_BUCKETS[lastWinBucket]}× — {lastWin >= bet ? '+' : ''}{formatMoney(lastWin - bet)}
+            {PLINKO_BUCKETS[lastWinBucket]}× — {lastWin > 0 ? '+' : '−'}{formatMoney(Math.abs(lastWin))}
           </motion.div>
         )}
       </AnimatePresence>

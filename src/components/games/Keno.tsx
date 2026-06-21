@@ -28,6 +28,8 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
   const [winAmount, setWinAmount] = useState(0);
   const [drawIndex, setDrawIndex] = useState(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const balanceRef = useRef(balance);
+  useEffect(() => { balanceRef.current = balance; }, [balance]);
 
   useEffect(() => () => {
     timeoutsRef.current.forEach(clearTimeout);
@@ -47,11 +49,11 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
   };
 
   const play = async () => {
-    if (balance < bet) { Sound.error(); return; }
+    if (balanceRef.current < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     if (picked.size !== 10) { Sound.error(); return; }
     Sound.bet();
-    onBalanceChange(balance - bet);
+    onBalanceChange(balanceRef.current - bet);
     setPhase('drawing');
     setDrawn([]);
     setMatches(0);
@@ -75,11 +77,12 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
     const finalId = setTimeout(() => {
       const matchCount = allDrawn.filter((n) => picked.has(n)).length;
       const payout = KENO_PAYOUTS[matchCount] || 0;
-      const win = bet * payout * bonusMultiplier;
+      const totalReturn = bet * payout * bonusMultiplier;
+      const profit = totalReturn - bet;
       setMatches(matchCount);
-      setWinAmount(win);
-      if (win > 0) {
-        onBalanceChange(balance + win);
+      setWinAmount(profit);
+      if (totalReturn > 0) {
+        onBalanceChange(balanceRef.current + totalReturn);
         if (payout >= 50) Sound.winBig();
         else Sound.cashRegister();
       } else {
@@ -113,7 +116,7 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
         )}
         {phase === 'done' && (
           <span style={{ color: winAmount > 0 ? 'var(--sf-win)' : 'var(--sf-lose)', fontWeight: 500 }}>
-            {matches} matches — {winAmount > 0 ? `+${formatMoney(winAmount - bet)}` : `−${formatMoney(bet)}`}
+            {matches} matches — {winAmount > 0 ? `+${formatMoney(winAmount)}` : `−${formatMoney(bet)}`}
           </span>
         )}
         {phase === 'idle' && picked.size === 10 && (

@@ -7,6 +7,7 @@ export interface Theme {
   name: string;
   icon: string;
   description: string;
+  isDark: boolean;
   colors: {
     bg: string;
     bgSecondary: string;
@@ -26,11 +27,13 @@ export interface Theme {
 }
 
 export const THEMES: Theme[] = [
+  // 3 LIGHT THEMES
   {
     id: 'linen',
     name: 'Linen',
     icon: '○',
     description: 'Warm beige with soft neutrals',
+    isDark: false,
     colors: {
       bg: '#F7F4EF',
       bgSecondary: '#EFE9E0',
@@ -49,32 +52,11 @@ export const THEMES: Theme[] = [
     panelGradient: 'none',
   },
   {
-    id: 'slate',
-    name: 'Slate',
-    icon: '○',
-    description: 'Cool grey with muted blue accent',
-    colors: {
-      bg: '#F5F6F7',
-      bgSecondary: '#E8EAED',
-      bgTertiary: '#F5F6F7',
-      border: '#D1D5DB',
-      accent: '#9CA3AF',
-      accentDark: '#6B7280',
-      accentRgb: '156, 163, 175',
-      win: '#6B8E5A',
-      lose: '#B85C5C',
-      text: '#25282B',
-      textMuted: '#6B7280',
-      glow: 'transparent',
-    },
-    gradient: 'none',
-    panelGradient: 'none',
-  },
-  {
     id: 'sage',
     name: 'Sage',
     icon: '○',
     description: 'Soft green-grey with botanical accent',
+    isDark: false,
     colors: {
       bg: '#F4F5F1',
       bgSecondary: '#E8EBE2',
@@ -97,6 +79,7 @@ export const THEMES: Theme[] = [
     name: 'Clay',
     icon: '○',
     description: 'Warm terracotta with muted clay accent',
+    isDark: false,
     colors: {
       bg: '#F6F3EF',
       bgSecondary: '#EAE3DC',
@@ -114,11 +97,13 @@ export const THEMES: Theme[] = [
     gradient: 'none',
     panelGradient: 'none',
   },
+  // 2 DARK THEMES
   {
     id: 'ink',
     name: 'Ink',
     icon: '○',
     description: 'Dark charcoal with muted silver accent',
+    isDark: true,
     colors: {
       bg: '#2A2724',
       bgSecondary: '#33302C',
@@ -131,6 +116,29 @@ export const THEMES: Theme[] = [
       lose: '#C47070',
       text: '#E8E3DC',
       textMuted: '#9A9088',
+      glow: 'transparent',
+    },
+    gradient: 'none',
+    panelGradient: 'none',
+  },
+  {
+    id: 'midnight',
+    name: 'Midnight',
+    icon: '○',
+    description: 'Deep navy with muted steel accent',
+    isDark: true,
+    colors: {
+      bg: '#1A1D24',
+      bgSecondary: '#242830',
+      bgTertiary: '#1A1D24',
+      border: '#353A44',
+      accent: '#8B95A5',
+      accentDark: '#6B7686',
+      accentRgb: '139, 149, 165',
+      win: '#7A9D6A',
+      lose: '#C47070',
+      text: '#DDE2EA',
+      textMuted: '#8A909A',
       glow: 'transparent',
     },
     gradient: 'none',
@@ -151,7 +159,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined') return 'linen';
     const saved = localStorage.getItem('sf-theme');
     // Migrate old theme IDs to new ones
-    if (saved === 'casino-gold' || saved === 'neon-cyber' || saved === 'royal-purple' || saved === 'ocean-blue' || saved === 'emerald') {
+    if (saved === 'casino-gold' || saved === 'neon-cyber' || saved === 'royal-purple' || saved === 'ocean-blue' || saved === 'emerald' || saved === 'slate') {
       return 'linen';
     }
     return saved || 'linen';

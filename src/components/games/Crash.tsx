@@ -33,14 +33,16 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   const phaseRef = useRef<Phase>('idle');
   useEffect(() => { phaseRef.current = phase; }, [phase]);
   const cashedRef = useRef(false);
+  const balanceRef = useRef(balance);
+  useEffect(() => { balanceRef.current = balance; }, [balance]);
 
   const crashPoints = useRef<number[]>(crashPointsForRound(seed, 10));
 
   const startRound = () => {
-    if (balance < bet) { Sound.error(); return; }
+    if (balanceRef.current < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     Sound.bet();
-    onBalanceChange(balance - bet);
+    onBalanceChange(balanceRef.current - bet);
     const idx = crashIndex % crashPoints.current.length;
     const point = crashPoints.current[idx];
     setCrashPoint(point);
@@ -80,10 +82,11 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   const cashOut = () => {
     if (phase !== 'running' || cashedRef.current) return;
     cashedRef.current = true;
-    const win = bet * multiplier * bonusMultiplier;
+    const totalReturn = bet * multiplier * bonusMultiplier;
+    const profit = totalReturn - bet;
     setCashedAt(multiplier);
-    setWinAmount(win);
-    onBalanceChange(balance + win);
+    setWinAmount(profit);
+    onBalanceChange(balanceRef.current + totalReturn);
     Sound.cashRegister();
     if (multiplier >= 3) Sound.winBig();
     else Sound.winSmall();
@@ -177,7 +180,7 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
             <div className="text-sm mt-2" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Place a bet to launch</div>
           )}
           {phase === 'cashed' && (
-            <div className="text-lg mt-2 font-mono" style={{ color: 'var(--sf-win)', fontWeight: 400 }}>+{formatMoney(winAmount - bet)}</div>
+            <div className="text-lg mt-2 font-mono" style={{ color: 'var(--sf-win)', fontWeight: 400 }}>+{formatMoney(winAmount)}</div>
           )}
         </div>
       </div>

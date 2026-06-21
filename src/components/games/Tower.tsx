@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sound } from '@/lib/sounds';
 import { formatMoney } from '@/lib/utils-casino';
@@ -52,13 +52,15 @@ export function Tower({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   const [shakingButton, setShakingButton] = useState<number | null>(null);
   const levelsRef = useRef<LevelData[]>([]);
   levelsRef.current = levels;
+  const balanceRef = useRef(balance);
+  useEffect(() => { balanceRef.current = balance; }, [balance]);
 
   const canPlay = balance >= bet && gameState === 'idle' && timeRemaining > 3;
 
   const startGame = () => {
     if (!canPlay) { Sound.error(); return; }
     Sound.bet();
-    onBalanceChange(balance - bet);
+    onBalanceChange(balanceRef.current - bet);
     setCurrentLevel(0);
     setLevels([]);
     setWinAmount(0);
@@ -119,9 +121,10 @@ export function Tower({ balance, onBalanceChange, bonusMultiplier, timeRemaining
     if (gameState !== 'playing' || currentLevel === 0) return;
     const lastSafeLevel = currentLevel - 1;
     const mult = multiplierForLevel(lastSafeLevel);
-    const win = bet * mult * bonusMultiplier;
-    setWinAmount(win);
-    onBalanceChange(balance + win);
+    const totalReturn = bet * mult * bonusMultiplier;
+    const profit = totalReturn - bet;
+    setWinAmount(profit);
+    onBalanceChange(balanceRef.current + totalReturn);
     Sound.cashRegister();
     if (mult >= 5) Sound.winBig();
     else Sound.winSmall();

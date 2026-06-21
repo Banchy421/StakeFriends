@@ -27,6 +27,8 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   const [lastWin, setLastWin] = useState(0);
   const [lastPayout, setLastPayout] = useState(0);
   const spinIntervals = useRef<ReturnType<typeof setInterval>[]>([]);
+  const balanceRef = useRef(balance);
+  useEffect(() => { balanceRef.current = balance; }, [balance]);
 
   const stopAllIntervals = () => {
     spinIntervals.current.forEach(clearInterval);
@@ -36,13 +38,13 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   useEffect(() => () => stopAllIntervals(), []);
 
   const spin = async () => {
-    if (balance < bet) { Sound.error(); return; }
+    if (balanceRef.current < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     if (spinState === 'spinning') return;
     stopAllIntervals();
 
     Sound.bet();
-    onBalanceChange(balance - bet);
+    onBalanceChange(balanceRef.current - bet);
     setSpinState('spinning');
     setReelStates(['spinning', 'spinning', 'spinning']);
     setLastWin(0);
@@ -86,12 +88,13 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
 
     setSpinState('evaluating');
     const payout = slotsPayout(final);
-    const win = bet * payout * bonusMultiplier;
+    const totalReturn = bet * payout * bonusMultiplier;
+    const profit = totalReturn - bet;
     await new Promise((r) => setTimeout(r, 400));
     setLastPayout(payout);
-    setLastWin(win);
+    setLastWin(profit);
     if (payout > 0) {
-      onBalanceChange(balance + win);
+      onBalanceChange(balanceRef.current + totalReturn);
       if (payout >= 5) Sound.winBig();
       else Sound.winSmall();
       setSpinState('won');
@@ -152,7 +155,7 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
             className="text-center font-display text-2xl py-2 font-mono"
             style={{ color: lastPayout >= 5 ? 'var(--sf-accent)' : 'var(--sf-win)', fontWeight: 500 }}
           >
-            {lastPayout}× — +{formatMoney(lastWin - bet)}
+            {lastPayout}× — +{formatMoney(lastWin)}
           </motion.div>
         )}
         {spinState === 'lost' && (

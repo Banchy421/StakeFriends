@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { minesMultiplier, mulberry32 } from '@/lib/utils-casino';
 import { Sound } from '@/lib/sounds';
@@ -33,6 +33,8 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   const [game, setGame] = useState<GameState>({
     status: 'idle', mineCount: 3, minePositions: new Set(), revealed: new Set(), bet: 10,
   });
+  const balanceRef = useRef(balance);
+  useEffect(() => { balanceRef.current = balance; }, [balance]);
 
   const safePicks = game.revealed.size;
   const currentMult = useMemo(
@@ -43,10 +45,10 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   const profit = cashOutAmount - bet;
 
   const startGame = () => {
-    if (balance < bet) { Sound.error(); return; }
+    if (balanceRef.current < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     Sound.bet();
-    onBalanceChange(balance - bet);
+    onBalanceChange(balanceRef.current - bet);
     const rng = mulberry32((seed ^ Date.now()) >>> 0);
     const positions = new Set<number>();
     while (positions.size < mineCount) {
@@ -81,7 +83,7 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
 
   const cashOut = () => {
     if (game.status !== 'playing' || game.revealed.size === 0) return;
-    onBalanceChange(balance + cashOutAmount);
+    onBalanceChange(balanceRef.current + cashOutAmount);
     if (currentMult >= 5) Sound.winBig();
     else Sound.winSmall();
     Sound.cashRegister();

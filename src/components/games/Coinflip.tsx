@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CoinSide } from '@/lib/utils-casino';
 import { Sound } from '@/lib/sounds';
 import { formatMoney } from '@/lib/utils-casino';
 import { BetControls } from './BetControls';
-import { cn } from '@/lib/utils';
 
 interface CoinflipProps {
   balance: number;
@@ -26,13 +25,15 @@ export function Coinflip({ balance, onBalanceChange, bonusMultiplier, timeRemain
   const [result, setResult] = useState<CoinSide | null>(null);
   const [flips, setFlips] = useState(0);
   const [winAmount, setWinAmount] = useState(0);
+  const balanceRef = useRef(balance);
+  useEffect(() => { balanceRef.current = balance; }, [balance]);
 
   const flip = () => {
     if (balance < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     if (phase === 'flipping') return;
     Sound.bet();
-    onBalanceChange(balance - bet);
+    onBalanceChange(balanceRef.current - bet);
     setPhase('flipping');
     setResult(null);
     setWinAmount(0);
@@ -45,9 +46,11 @@ export function Coinflip({ balance, onBalanceChange, bonusMultiplier, timeRemain
       Sound.coinLand();
       const won = landed === side;
       if (won) {
-        const win = bet * bonusMultiplier;
-        setWinAmount(win);
-        onBalanceChange(balance + win);
+        // Win = bet + profit (total return). balanceRef already has bet deducted.
+        const profit = bet * bonusMultiplier;
+        const totalReturn = bet + profit;
+        setWinAmount(profit);
+        onBalanceChange(balanceRef.current + totalReturn);
         Sound.winSmall();
         setPhase('won');
       } else {
@@ -126,7 +129,7 @@ export function Coinflip({ balance, onBalanceChange, bonusMultiplier, timeRemain
               <div className="text-xs" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>Landed on</div>
               <div className="font-display text-2xl capitalize" style={{ color: 'var(--sf-text)', fontWeight: 500 }}>{result}</div>
               {phase === 'won' && (
-                <div className="text-lg font-mono mt-1" style={{ color: 'var(--sf-win)', fontWeight: 400 }}>+{formatMoney(winAmount - bet)}</div>
+                <div className="text-lg font-mono mt-1" style={{ color: 'var(--sf-win)', fontWeight: 400 }}>+{formatMoney(winAmount)}</div>
               )}
               {phase === 'lost' && (
                 <div className="text-lg font-mono mt-1" style={{ color: 'var(--sf-lose)', fontWeight: 400 }}>−{formatMoney(bet)}</div>

@@ -69,6 +69,41 @@ export function useLocalGameState(): UseLocalGameStateApi {
 
   useEffect(() => { stateRef.current = state; }, [state]);
 
+  // Save state to localStorage for refresh persistence (solo mode)
+  useEffect(() => {
+    if (state && roomCode) {
+      try {
+        localStorage.setItem('sf-solo-state', JSON.stringify(state));
+        localStorage.setItem('sf-solo-room', roomCode);
+        if (selfRef.current) {
+          localStorage.setItem('sf-solo-self', JSON.stringify(selfRef.current));
+        }
+      } catch {}
+    }
+  }, [state, roomCode]);
+
+  // Restore state on mount (solo mode refresh persistence)
+  useEffect(() => {
+    try {
+      const savedState = localStorage.getItem('sf-solo-state');
+      const savedRoom = localStorage.getItem('sf-solo-room');
+      const savedSelf = localStorage.getItem('sf-solo-self');
+      if (savedState && savedRoom) {
+        const parsedState = JSON.parse(savedState) as GameState;
+        const parsedSelf = savedSelf ? JSON.parse(savedSelf) as Player : null;
+        // Defer state updates to avoid cascading renders
+        queueMicrotask(() => {
+          stateRef.current = parsedState;
+          if (parsedSelf) selfRef.current = parsedSelf;
+          setState(parsedState);
+          setRoomCode(savedRoom);
+          setIsHost(true);
+          if (parsedSelf) setSelfId(parsedSelf.id);
+        });
+      }
+    } catch {}
+  }, []);
+
   const broadcast = useCallback((next: GameState) => {
     setState(next);
     stateRef.current = next;
@@ -101,6 +136,11 @@ export function useLocalGameState(): UseLocalGameStateApi {
     setIsHost(false);
     setSelfId('');
     selfRef.current = null;
+    try {
+      localStorage.removeItem('sf-solo-state');
+      localStorage.removeItem('sf-solo-room');
+      localStorage.removeItem('sf-solo-self');
+    } catch {}
   }, []);
 
   const hostStartGame = useCallback((mode: GameMode) => {

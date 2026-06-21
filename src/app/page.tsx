@@ -19,12 +19,27 @@ type Mode = 'multiplayer' | 'solo';
 export default function Home() {
   const multiplayerApi = useGameState();
   const soloApi = useLocalGameState();
-  // Lazy initial state — check ?solo=1 once on mount
+  // Lazy initial state — check ?solo=1 and saved state on mount
   const [mode, setMode] = useState<Mode>(() => {
     if (typeof window === 'undefined') return 'multiplayer';
-    return new URLSearchParams(window.location.search).get('solo') === '1' ? 'solo' : 'multiplayer';
+    const soloParam = new URLSearchParams(window.location.search).get('solo') === '1';
+    if (soloParam) return 'solo';
+    // Check for saved multiplayer state
+    const savedMpState = localStorage.getItem('sf-game-state');
+    const savedSoloState = localStorage.getItem('sf-solo-state');
+    if (savedSoloState && !savedMpState) return 'solo';
+    return 'multiplayer';
   });
-  const [view, setView] = useState<'landing' | 'game'>('landing');
+  // Start in 'game' view if there's saved state to restore
+  const [view, setView] = useState<'landing' | 'game'>(() => {
+    if (typeof window === 'undefined') return 'landing';
+    const savedMp = localStorage.getItem('sf-game-state');
+    const savedSolo = localStorage.getItem('sf-solo-state');
+    const soloParam = new URLSearchParams(window.location.search).get('solo') === '1';
+    if (soloParam && savedSolo) return 'game';
+    if (!soloParam && savedMp) return 'game';
+    return 'landing';
+  });
 
   // Use the appropriate API based on mode
   const api = mode === 'solo' ? soloApi : multiplayerApi;
