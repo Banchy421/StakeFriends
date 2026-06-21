@@ -155,15 +155,22 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [themeId, setThemeIdState] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'linen';
+  // Always start with 'linen' on both server and client to avoid hydration mismatch.
+  // The saved theme is loaded in a useEffect after hydration completes.
+  const [themeId, setThemeIdState] = useState<string>('linen');
+
+  // Load saved theme after mount (client-only, avoids hydration mismatch)
+  useEffect(() => {
     const saved = localStorage.getItem('sf-theme');
-    // Migrate old theme IDs to new ones
-    if (saved === 'casino-gold' || saved === 'neon-cyber' || saved === 'royal-purple' || saved === 'ocean-blue' || saved === 'emerald' || saved === 'slate') {
-      return 'linen';
+    if (saved) {
+      const migrated = (saved === 'casino-gold' || saved === 'neon-cyber' || saved === 'royal-purple' || saved === 'ocean-blue' || saved === 'emerald' || saved === 'slate')
+        ? 'linen'
+        : saved;
+      if (migrated !== 'linen' && THEMES.find((t) => t.id === migrated)) {
+        queueMicrotask(() => setThemeIdState(migrated));
+      }
     }
-    return saved || 'linen';
-  });
+  }, []);
 
   const theme = THEMES.find((t) => t.id === themeId) ?? THEMES[0];
 

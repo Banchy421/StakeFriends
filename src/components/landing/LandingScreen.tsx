@@ -30,12 +30,31 @@ function loadInitial() {
 }
 
 export function LandingScreen({ onCreate, onJoin, mode = 'multiplayer', onModeChange }: LandingScreenProps) {
-  const init = typeof window !== 'undefined' ? loadInitial() : { name: '', avatar: AVATARS[0], action: 'create' as const, joinCode: '' };
-  const [name, setName] = useState(init.name);
-  const [avatar, setAvatar] = useState<string>(init.avatar);
-  const [action, setAction] = useState<'create' | 'join'>(init.action);
-  const [joinCode, setJoinCode] = useState(init.joinCode);
+  // Always start with defaults to avoid hydration mismatch.
+  // Saved values are loaded in a useEffect after hydration.
+  const [name, setName] = useState('');
+  const [avatar, setAvatar] = useState<string>(AVATARS[0]);
+  const [action, setAction] = useState<'create' | 'join'>('create');
+  const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
+
+  // Load saved name/avatar/joinCode after mount — deferred to avoid cascading renders
+  useEffect(() => {
+    const savedName = localStorage.getItem('sf-name') ?? '';
+    const savedAvatar = localStorage.getItem('sf-avatar');
+    const pendingJoin = sessionStorage.getItem('sf-pending-join');
+    const avatarVal = savedAvatar && (AVATARS as readonly string[]).includes(savedAvatar as any)
+      ? savedAvatar as string : undefined;
+    queueMicrotask(() => {
+      if (savedName) setName(savedName);
+      if (avatarVal) setAvatar(avatarVal);
+      if (pendingJoin) {
+        sessionStorage.removeItem('sf-pending-join');
+        setAction('join');
+        setJoinCode(pendingJoin);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const unlock = () => { unlockAudio(); };
