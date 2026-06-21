@@ -1,4 +1,5 @@
 'use client';
+import { applyWinEffects, applyLossEffects, applyJackpotMagnet, isFrozen, type PowerEffects } from '@/lib/powerEffects';
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +15,12 @@ interface TowerProps {
   bailoutPenalty: boolean;
   timeRemaining: number;
   seed: number;
+  insured: boolean;
+  doubleOrNothing: boolean;
+  goldRushActive: boolean;
+  jackpotMagnet: boolean;
+  cursed: boolean;
+  frozen: boolean;
 }
 
 type GameState = 'idle' | 'playing' | 'busted' | 'cashed';
@@ -43,7 +50,8 @@ function bombChanceForLevel(level: number): number {
   return Math.min(0.85, 0.33 + level * 0.02);
 }
 
-export function Tower({ balance, onBalanceChange, bonusMultiplier, timeRemaining }: TowerProps) {
+export function Tower({ balance, onBalanceChange, bonusMultiplier, timeRemaining, ...powerProps }: TowerProps) {
+  const effects: PowerEffects = powerProps;
   const [bet, setBet] = useState(10);
   const [gameState, setGameState] = useState<GameState>('idle');
   const [currentLevel, setCurrentLevel] = useState(0);
@@ -58,6 +66,7 @@ export function Tower({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   const canPlay = balance >= bet && gameState === 'idle' && timeRemaining > 3;
 
   const startGame = () => {
+    if (isFrozen(effects)) { Sound.error(); return; }
     if (!canPlay) { Sound.error(); return; }
     Sound.bet();
     onBalanceChange(balanceRef.current - bet);
@@ -86,6 +95,7 @@ export function Tower({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   };
 
   const pickButton = (buttonIndex: number) => {
+    if (isFrozen(effects)) return;
     if (gameState !== 'playing') return;
     const level = levelsRef.current[currentLevel];
     if (!level || level.pickedIndex !== null) return;
@@ -101,6 +111,9 @@ export function Tower({ balance, onBalanceChange, bonusMultiplier, timeRemaining
     if (buttonIndex === level.bombIndex) {
       setShakingButton(buttonIndex);
       Sound.explosion();
+      const lossResult = applyLossEffects(bet, effects);
+      const refund = bet - lossResult.adjustedLoss;
+      if (refund !== 0) onBalanceChange(balanceRef.current + refund);
       setGameState('busted');
       setTimeout(() => {
         setShakingButton(null);
@@ -121,10 +134,11 @@ export function Tower({ balance, onBalanceChange, bonusMultiplier, timeRemaining
     if (gameState !== 'playing' || currentLevel === 0) return;
     const lastSafeLevel = currentLevel - 1;
     const mult = multiplierForLevel(lastSafeLevel);
-    const totalReturn = bet * mult * bonusMultiplier;
-    const profit = totalReturn - bet;
-    setWinAmount(profit);
-    onBalanceChange(balanceRef.current + totalReturn);
+    const baseReturn = bet * mult * bonusMultiplier;
+    const baseProfit = baseReturn - bet;
+    const winResult = applyWinEffects(baseProfit, effects);
+    setWinAmount(winResult.adjustedProfit);
+    onBalanceChange(balanceRef.current + bet + winResult.adjustedProfit);
     Sound.cashRegister();
     if (mult >= 5) Sound.winBig();
     else Sound.winSmall();

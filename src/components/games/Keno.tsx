@@ -1,4 +1,5 @@
 'use client';
+import { applyWinEffects, applyLossEffects, applyJackpotMagnet, isFrozen, type PowerEffects } from '@/lib/powerEffects';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,11 +16,18 @@ interface KenoProps {
   bailoutPenalty: boolean;
   timeRemaining: number;
   seed: number;
+  insured: boolean;
+  doubleOrNothing: boolean;
+  goldRushActive: boolean;
+  jackpotMagnet: boolean;
+  cursed: boolean;
+  frozen: boolean;
 }
 
 type Phase = 'idle' | 'drawing' | 'done';
 
-export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining, seed }: KenoProps) {
+export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining, seed, ...powerProps }: KenoProps) {
+  const effects: PowerEffects = powerProps;
   const [bet, setBet] = useState(10);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [drawn, setDrawn] = useState<number[]>([]);
@@ -49,6 +57,7 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
   };
 
   const play = async () => {
+    if (isFrozen(effects)) { Sound.error(); return; }
     if (balanceRef.current < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     if (picked.size !== 10) { Sound.error(); return; }
@@ -77,15 +86,19 @@ export function Keno({ balance, onBalanceChange, bonusMultiplier, timeRemaining,
     const finalId = setTimeout(() => {
       const matchCount = allDrawn.filter((n) => picked.has(n)).length;
       const payout = KENO_PAYOUTS[matchCount] || 0;
-      const totalReturn = bet * payout * bonusMultiplier;
-      const profit = totalReturn - bet;
+      const baseReturn = bet * payout * bonusMultiplier;
+      const baseProfit = baseReturn - bet;
+      const winResult = applyWinEffects(baseProfit, effects);
       setMatches(matchCount);
-      setWinAmount(profit);
-      if (totalReturn > 0) {
-        onBalanceChange(balanceRef.current + totalReturn);
+      setWinAmount(winResult.adjustedProfit);
+      if (baseReturn > 0) {
+        onBalanceChange(balanceRef.current + bet + winResult.adjustedProfit);
         if (payout >= 50) Sound.winBig();
         else Sound.cashRegister();
       } else {
+        const lossResult = applyLossEffects(bet, effects);
+        const refund = bet - lossResult.adjustedLoss;
+        if (refund !== 0) onBalanceChange(balanceRef.current + refund);
         Sound.lose();
       }
       setPhase('done');

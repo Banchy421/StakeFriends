@@ -1,4 +1,5 @@
 'use client';
+import { applyWinEffects, applyLossEffects, applyJackpotMagnet, isFrozen, type PowerEffects } from '@/lib/powerEffects';
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,11 +15,18 @@ interface CoinflipProps {
   bailoutPenalty: boolean;
   timeRemaining: number;
   seed: number;
+  insured: boolean;
+  doubleOrNothing: boolean;
+  goldRushActive: boolean;
+  jackpotMagnet: boolean;
+  cursed: boolean;
+  frozen: boolean;
 }
 
 type Phase = 'idle' | 'flipping' | 'won' | 'lost';
 
-export function Coinflip({ balance, onBalanceChange, bonusMultiplier, timeRemaining }: CoinflipProps) {
+export function Coinflip({ balance, onBalanceChange, bonusMultiplier, timeRemaining, ...powerProps }: CoinflipProps) {
+  const effects: PowerEffects = powerProps;
   const [bet, setBet] = useState(10);
   const [side, setSide] = useState<CoinSide>('heads');
   const [phase, setPhase] = useState<Phase>('idle');
@@ -31,6 +39,7 @@ export function Coinflip({ balance, onBalanceChange, bonusMultiplier, timeRemain
   const flip = () => {
     if (balance < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
+    if (isFrozen(effects)) { Sound.error(); return; }
     if (phase === 'flipping') return;
     Sound.bet();
     onBalanceChange(balanceRef.current - bet);
@@ -47,13 +56,17 @@ export function Coinflip({ balance, onBalanceChange, bonusMultiplier, timeRemain
       const won = landed === side;
       if (won) {
         // Win = bet + profit (total return). balanceRef already has bet deducted.
-        const profit = bet * bonusMultiplier;
-        const totalReturn = bet + profit;
-        setWinAmount(profit);
+        const baseProfit = bet * bonusMultiplier;
+        const winResult = applyWinEffects(baseProfit, effects);
+        const totalReturn = bet + winResult.adjustedProfit;
+        setWinAmount(winResult.adjustedProfit);
         onBalanceChange(balanceRef.current + totalReturn);
         Sound.winSmall();
         setPhase('won');
       } else {
+        const lossResult = applyLossEffects(bet, effects);
+        const refund = bet - lossResult.adjustedLoss;
+        if (refund !== 0) onBalanceChange(balanceRef.current + refund);
         Sound.lose();
         setPhase('lost');
       }

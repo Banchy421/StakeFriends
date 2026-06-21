@@ -1,4 +1,5 @@
 'use client';
+import { applyWinEffects, applyLossEffects, applyJackpotMagnet, isFrozen, type PowerEffects } from '@/lib/powerEffects';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,11 +16,18 @@ interface SlotsProps {
   bailoutPenalty: boolean;
   timeRemaining: number;
   seed: number;
+  insured: boolean;
+  doubleOrNothing: boolean;
+  goldRushActive: boolean;
+  jackpotMagnet: boolean;
+  cursed: boolean;
+  frozen: boolean;
 }
 
 type SpinState = 'idle' | 'spinning' | 'evaluating' | 'won' | 'lost';
 
-export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining }: SlotsProps) {
+export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining, ...powerProps }: SlotsProps) {
+  const effects: PowerEffects = powerProps;
   const [bet, setBet] = useState(10);
   const [reels, setReels] = useState<string[]>(['🍒', '🍋', '🍊']);
   const [reelStates, setReelStates] = useState<('idle' | 'spinning' | 'stopped')[]>(['idle', 'idle', 'idle']);
@@ -38,6 +46,7 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   useEffect(() => () => stopAllIntervals(), []);
 
   const spin = async () => {
+    if (isFrozen(effects)) { Sound.error(); return; }
     if (balanceRef.current < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     if (spinState === 'spinning') return;
@@ -88,17 +97,21 @@ export function Slots({ balance, onBalanceChange, bonusMultiplier, timeRemaining
 
     setSpinState('evaluating');
     const payout = slotsPayout(final);
-    const totalReturn = bet * payout * bonusMultiplier;
-    const profit = totalReturn - bet;
+    const baseReturn = bet * payout * bonusMultiplier;
+    const baseProfit = baseReturn - bet;
+    const winResult = applyWinEffects(baseProfit, effects);
     await new Promise((r) => setTimeout(r, 400));
     setLastPayout(payout);
-    setLastWin(profit);
+    setLastWin(winResult.adjustedProfit);
     if (payout > 0) {
-      onBalanceChange(balanceRef.current + totalReturn);
+      onBalanceChange(balanceRef.current + bet + winResult.adjustedProfit);
       if (payout >= 5) Sound.winBig();
       else Sound.winSmall();
       setSpinState('won');
     } else {
+      const lossResult = applyLossEffects(bet, effects);
+      const refund = bet - lossResult.adjustedLoss;
+      if (refund !== 0) onBalanceChange(balanceRef.current + refund);
       Sound.lose();
       setSpinState('lost');
     }

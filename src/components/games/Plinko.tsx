@@ -1,4 +1,5 @@
 'use client';
+import { applyWinEffects, applyLossEffects, applyJackpotMagnet, isFrozen, type PowerEffects } from '@/lib/powerEffects';
 
 import { useState, useEffect, useRef } from 'react';
 import Matter from 'matter-js';
@@ -16,6 +17,12 @@ interface PlinkoProps {
   bailoutPenalty: boolean;
   timeRemaining: number;
   seed: number;
+  insured: boolean;
+  doubleOrNothing: boolean;
+  goldRushActive: boolean;
+  jackpotMagnet: boolean;
+  cursed: boolean;
+  frozen: boolean;
 }
 
 interface Ball {
@@ -35,7 +42,8 @@ const WIDTH = 400;
 const HEIGHT = 520;
 const BUCKET_COUNT = 9;
 
-export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemaining }: PlinkoProps) {
+export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemaining, ...powerProps }: PlinkoProps) {
+  const effects: PowerEffects = powerProps;
   const [bet, setBet] = useState(10);
   const [balls, setBalls] = useState<Ball[]>([]);
   const [landedBucket, setLandedBucket] = useState<number | null>(null);
@@ -148,17 +156,25 @@ export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemainin
           ball.bucket = bucketIndex;
           // Resolve win
           const mult = PLINKO_BUCKETS[bucketIndex];
-          const totalReturn = bet * mult * bonusMultiplier;
-          const profit = totalReturn - bet;
+          const baseReturn = bet * mult * bonusMultiplier;
+          const baseProfit = baseReturn - bet;
           // Update state outside loop
           setTimeout(() => {
-            setLastWin(profit);
+            const winResult = applyWinEffects(baseProfit, effects);
+            const totalReturn = bet + winResult.adjustedProfit;
+            setLastWin(winResult.adjustedProfit);
             setLastWinBucket(bucketIndex);
             setLandedBucket(bucketIndex);
             onBalanceChange(balanceRef.current + totalReturn);
             if (mult >= 5) Sound.winBig();
             else if (mult >= 1) Sound.winSmall();
-            else Sound.lose();
+            else {
+              // Loss — apply insurance
+              const lossResult = applyLossEffects(bet, effects);
+              const refund = bet - lossResult.adjustedLoss;
+              if (refund !== 0) onBalanceChange(balanceRef.current + refund);
+              Sound.lose();
+            }
             Sound.plinkoLand();
             setTimeout(() => {
               setLandedBucket(null);
@@ -247,6 +263,7 @@ export function Plinko({ balance, onBalanceChange, bonusMultiplier, timeRemainin
   }, [bet, bonusMultiplier, balance, onBalanceChange, landedBucket, lastWinBucket]);
 
   const dropBall = () => {
+    if (isFrozen(effects)) { Sound.error(); return; }
     if (balance < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     Sound.bet();

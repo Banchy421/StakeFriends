@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { minesMultiplier, mulberry32 } from '@/lib/utils-casino';
 import { Sound } from '@/lib/sounds';
 import { formatMoney } from '@/lib/utils-casino';
+import { applyWinEffects, applyLossEffects, applyJackpotMagnet, isFrozen, type PowerEffects } from '@/lib/powerEffects';
 import { BetControls } from './BetControls';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +16,12 @@ interface MinesProps {
   bailoutPenalty: boolean;
   timeRemaining: number;
   seed: number;
+  insured: boolean;
+  doubleOrNothing: boolean;
+  goldRushActive: boolean;
+  jackpotMagnet: boolean;
+  cursed: boolean;
+  frozen: boolean;
 }
 
 interface GameState {
@@ -27,7 +34,8 @@ interface GameState {
 
 const TILES = 25;
 
-export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining, seed }: MinesProps) {
+export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining, seed, ...powerProps }: MinesProps) {
+  const effects: PowerEffects = powerProps;
   const [bet, setBet] = useState(10);
   const [mineCount, setMineCount] = useState(3);
   const [game, setGame] = useState<GameState>({
@@ -45,6 +53,7 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   const profit = cashOutAmount - bet;
 
   const startGame = () => {
+    if (isFrozen(effects)) { Sound.error(); return; }
     if (balanceRef.current < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     Sound.bet();
@@ -54,9 +63,14 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
     while (positions.size < mineCount) {
       positions.add(Math.floor(rng() * TILES));
     }
+    // Jackpot Magnet: remove 1 mine (20% nudge = fewer mines)
+    if (effects.jackpotMagnet && positions.size > 1) {
+      const toRemove = Array.from(positions)[Math.floor(rng() * positions.size)];
+      positions.delete(toRemove);
+    }
     setGame({
       status: 'playing',
-      mineCount,
+      mineCount: positions.size,
       minePositions: positions,
       revealed: new Set(),
       bet,
@@ -64,6 +78,7 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   };
 
   const revealTile = (idx: number) => {
+    if (isFrozen(effects)) return;
     if (game.status !== 'playing') return;
     if (game.revealed.has(idx)) return;
     const newRevealed = new Set(game.revealed);
@@ -71,6 +86,13 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
 
     if (game.minePositions.has(idx)) {
       Sound.explosion();
+      // Apply loss effects: insurance reduces loss, double-or-nothing doubles it
+      const lossResult = applyLossEffects(bet, effects);
+      // Refund part of the bet if insured, or take extra if double-or-nothing
+      const balanceAdjustment = bet - lossResult.adjustedLoss; // positive = refund, negative = extra loss
+      if (balanceAdjustment !== 0) {
+        onBalanceChange(balanceRef.current + balanceAdjustment);
+      }
       setGame({ ...game, status: 'lost', revealed: newRevealed });
       setTimeout(() => {
         setGame({ status: 'idle', mineCount, minePositions: new Set(), revealed: new Set(), bet });
@@ -82,8 +104,12 @@ export function Mines({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   };
 
   const cashOut = () => {
+    if (isFrozen(effects)) return;
     if (game.status !== 'playing' || game.revealed.size === 0) return;
-    onBalanceChange(balanceRef.current + cashOutAmount);
+    // Apply win effects (gold rush, curse, double or nothing)
+    const winResult = applyWinEffects(profit, effects);
+    const totalReturn = bet + winResult.adjustedProfit;
+    onBalanceChange(balanceRef.current + totalReturn);
     if (currentMult >= 5) Sound.winBig();
     else Sound.winSmall();
     Sound.cashRegister();

@@ -42,6 +42,13 @@ interface GameProps {
   bailoutPenalty: boolean;
   timeRemaining: number;
   seed: number;
+  // Power effects
+  insured: boolean;
+  doubleOrNothing: boolean;
+  goldRushActive: boolean;
+  jackpotMagnet: boolean;
+  cursed: boolean;
+  frozen: boolean;
 }
 
 const GAME_COMPONENTS: Record<GameName, React.ComponentType<GameProps>> = {
@@ -267,6 +274,12 @@ export function GameLayout({
                     bailoutPenalty={bailoutPenalty}
                     timeRemaining={timeRemaining}
                     seed={state.roundSeed}
+                    insured={self?.insured ?? false}
+                    doubleOrNothing={self?.doubleOrNothing ?? false}
+                    goldRushActive={self ? self.goldRushUntil > Date.now() : false}
+                    jackpotMagnet={self?.jackpotMagnet ?? false}
+                    cursed={self?.cursed ?? false}
+                    frozen={self ? self.frozenUntil > Date.now() : false}
                   />
                 </motion.div>
               ) : (

@@ -1,4 +1,5 @@
 'use client';
+import { applyWinEffects, applyLossEffects, applyJackpotMagnet, isFrozen, type PowerEffects } from '@/lib/powerEffects';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
@@ -15,11 +16,18 @@ interface CrashProps {
   bailoutPenalty: boolean;
   timeRemaining: number;
   seed: number;
+  insured: boolean;
+  doubleOrNothing: boolean;
+  goldRushActive: boolean;
+  jackpotMagnet: boolean;
+  cursed: boolean;
+  frozen: boolean;
 }
 
 type Phase = 'idle' | 'running' | 'crashed' | 'cashed';
 
-export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining, seed }: CrashProps) {
+export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining, seed, ...powerProps }: CrashProps) {
+  const effects: PowerEffects = powerProps;
   const [bet, setBet] = useState(10);
   const [phase, setPhase] = useState<Phase>('idle');
   const [multiplier, setMultiplier] = useState(1.0);
@@ -39,6 +47,7 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   const crashPoints = useRef<number[]>(crashPointsForRound(seed, 10));
 
   const startRound = () => {
+    if (isFrozen(effects)) { Sound.error(); return; }
     if (balanceRef.current < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     Sound.bet();
@@ -82,11 +91,12 @@ export function Crash({ balance, onBalanceChange, bonusMultiplier, timeRemaining
   const cashOut = () => {
     if (phase !== 'running' || cashedRef.current) return;
     cashedRef.current = true;
-    const totalReturn = bet * multiplier * bonusMultiplier;
-    const profit = totalReturn - bet;
+    const baseReturn = bet * multiplier * bonusMultiplier;
+    const baseProfit = baseReturn - bet;
+    const winResult = applyWinEffects(baseProfit, effects);
     setCashedAt(multiplier);
-    setWinAmount(profit);
-    onBalanceChange(balanceRef.current + totalReturn);
+    setWinAmount(winResult.adjustedProfit);
+    onBalanceChange(balanceRef.current + bet + winResult.adjustedProfit);
     Sound.cashRegister();
     if (multiplier >= 3) Sound.winBig();
     else Sound.winSmall();

@@ -1,4 +1,5 @@
 'use client';
+import { applyWinEffects, applyLossEffects, applyJackpotMagnet, isFrozen, type PowerEffects } from '@/lib/powerEffects';
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,12 +16,19 @@ interface BlackjackProps {
   bailoutPenalty: boolean;
   timeRemaining: number;
   seed: number;
+  insured: boolean;
+  doubleOrNothing: boolean;
+  goldRushActive: boolean;
+  jackpotMagnet: boolean;
+  cursed: boolean;
+  frozen: boolean;
 }
 
 type Phase = 'idle' | 'dealing' | 'player' | 'dealer' | 'done';
 type Result = 'win' | 'lose' | 'push' | 'blackjack' | null;
 
-export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemaining, seed }: BlackjackProps) {
+export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemaining, seed, ...powerProps }: BlackjackProps) {
+  const effects: PowerEffects = powerProps;
   const [bet, setBet] = useState(10);
   const [deck, setDeck] = useState<Card[]>([]);
   const [playerHand, setPlayerHand] = useState<{ card: Card; id: number }[]>([]);
@@ -46,6 +54,7 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
   const startHand = async () => {
+    if (isFrozen(effects)) { Sound.error(); return; }
     if (balance < bet) { Sound.error(); return; }
     if (timeRemaining <= 3) { Sound.error(); return; }
     Sound.bet();
@@ -188,15 +197,27 @@ export function Blackjack({ balance, onBalanceChange, bonusMultiplier, timeRemai
    *  (original bet + profit). For a push, it's just the bet. For a loss, it's 0. */
   const finishHand = (res: Result, totalReturn: number) => {
     setResult(res);
-    setWinAmount(totalReturn);
-    if (totalReturn > 0) {
-      // balanceRef.current is the live balance (after bet deduction).
-      // Add the total return (bet + profit) to get the final balance.
-      onBalanceChange(balanceRef.current + totalReturn);
+    if (res === 'win' || res === 'blackjack') {
+      // Apply win effects (gold rush, curse, double or nothing)
+      const baseProfit = totalReturn - bet;
+      const winResult = applyWinEffects(baseProfit, effects);
+      const adjustedReturn = bet + winResult.adjustedProfit;
+      setWinAmount(adjustedReturn);
+      onBalanceChange(balanceRef.current + adjustedReturn);
       if (res === 'blackjack') Sound.winBig();
       else Sound.chipClink();
     } else if (res === 'lose') {
+      // Apply loss effects (insurance, double or nothing)
+      const lossResult = applyLossEffects(bet, effects);
+      const refund = bet - lossResult.adjustedLoss;
+      if (refund > 0) onBalanceChange(balanceRef.current + refund);
+      else if (refund < 0) onBalanceChange(balanceRef.current + refund);
+      setWinAmount(0);
       Sound.lose();
+    } else {
+      // Push — bet returned, no effects
+      setWinAmount(totalReturn);
+      onBalanceChange(balanceRef.current + totalReturn);
     }
     setPhase('done');
     setTimeout(() => {
