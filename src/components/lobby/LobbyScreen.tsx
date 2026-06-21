@@ -13,13 +13,14 @@ interface LobbyScreenProps {
   self: import('@/lib/types').Player | null;
   isHost: boolean;
   roomCode: string;
-  onStart: (mode: GameMode) => void;
+  onStart: (mode: GameMode, powersEnabled: boolean) => void;
   onLeave: () => void;
   soloMode?: boolean;
 }
 
 export function LobbyScreen({ state, self, isHost, roomCode, onStart, onLeave, soloMode = false }: LobbyScreenProps) {
   const [mode, setMode] = useState<GameMode>('standard');
+  const [powersEnabled, setPowersEnabled] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const playerList = Object.values(state.players).sort((a, b) => a.joinedAt - b.joinedAt);
@@ -178,8 +179,35 @@ export function LobbyScreen({ state, self, isHost, roomCode, onStart, onLeave, s
             </div>
           </div>
 
+          {/* Powers toggle */}
+          <div className="panel p-3 mb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm" style={{ color: 'var(--sf-text)', fontWeight: 500 }}>Powers mode</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--sf-text-muted)', fontWeight: 400 }}>
+                  Each player gets a random power to use once
+                </div>
+              </div>
+              <button
+                onClick={() => { setPowersEnabled(!powersEnabled); Sound.click(); }}
+                className="relative w-11 h-6 rounded-full transition-colors"
+                style={{
+                  backgroundColor: powersEnabled ? 'var(--sf-accent)' : 'var(--sf-border)',
+                }}
+              >
+                <div
+                  className="absolute top-0.5 w-5 h-5 rounded-full transition-transform"
+                  style={{
+                    backgroundColor: 'var(--sf-bg)',
+                    transform: powersEnabled ? 'translateX(22px)' : 'translateX(2px)',
+                  }}
+                />
+              </button>
+            </div>
+          </div>
+
           <button
-            onClick={() => { if (canStart) onStart(mode); else Sound.error(); }}
+            onClick={() => { if (canStart) onStart(mode, powersEnabled); else Sound.error(); }}
             disabled={!canStart}
             className={cn(
               'w-full py-3 rounded-md transition-colors',

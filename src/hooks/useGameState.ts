@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { GameState, Player, PlayerAction, GameMode, GameName } from '@/lib/types';
+import type { GameState, Player, PlayerAction, GameMode, GameName, PowerType } from '@/lib/types';
 import {
   makeInitialState,
   addPlayer,
@@ -19,6 +19,10 @@ import {
   skipRound,
   resetForPlayAgain,
   sortedPlayers,
+  startPowerSelect,
+  resolvePowerSelect,
+  selectPower,
+  activatePower,
 } from '@/lib/gameLogic';
 import { Sound } from '@/lib/sounds';
 import { generateRoomCode } from '@/lib/utils-casino';
@@ -35,8 +39,9 @@ export interface UseGameStateApi {
   joinRoomByCode: (player: Player, code: string) => void;
   leave: () => void;
   // host actions
-  hostStartGame: (mode: GameMode) => void;
+  hostStartGame: (mode: GameMode, powersEnabled: boolean) => void;
   hostAdvanceFromGameSelect: () => void;
+  hostAdvanceFromPowerSelect: () => void;
   hostAdvanceFromFinalVote: () => void;
   hostResolveCoinflip: () => void;
   hostAdvanceFromRoundTimeout: () => void;
@@ -51,6 +56,8 @@ export interface UseGameStateApi {
   sendLiveBalance: (balance: number) => void;
   sendRoundEndBalance: (balance: number) => void;
   chooseBailout: (amount: number) => void;
+  selectPlayerPower: (power: PowerType) => void;
+  activatePlayerPower: (targetId?: string) => void;
 }
 
 interface P2PApi {
@@ -293,8 +300,30 @@ export function useGameState(): UseGameStateApi {
       }
       case 'start-game': {
         if (peerId === next.hostId) {
-          next = startGameSelect({ ...next, gameMode: action.mode, totalRounds: action.mode === 'standard' ? 3 : 6 });
+          const base = { ...next, gameMode: action.mode, totalRounds: action.mode === 'standard' ? 3 : 6, powersEnabled: action.powersEnabled };
+          if (action.powersEnabled) {
+            next = startPowerSelect(base);
+          } else {
+            next = startGameSelect(base);
+          }
         }
+        break;
+      }
+      case 'select-power': {
+        if (next.phase !== 'power-select') break;
+        next = selectPower(next, peerId, action.power);
+        // Check if all players selected
+        const active = Object.keys(next.players).filter((id) => !next.players[id].isEliminated);
+        if (active.every((id) => next.powerSelections[id])) {
+          next = resolvePowerSelect(next);
+          Sound.fanfare();
+        }
+        break;
+      }
+      case 'activate-power': {
+        if (next.phase !== 'round-active') break;
+        next = activatePower(next, peerId, action.targetId);
+        Sound.cashRegister();
         break;
       }
       case 'play-again': {
@@ -459,21 +488,29 @@ export function useGameState(): UseGameStateApi {
   }, []);
 
   // HOST ACTIONS
-  const hostStartGame = useCallback((mode: GameMode) => {
+  const hostStartGame = useCallback((mode: GameMode, powersEnabled: boolean) => {
     const cur = stateRef.current;
     if (!cur || !isHost) return;
-    const next = startGameSelect({
-      ...cur,
-      gameMode: mode,
-      totalRounds: mode === 'standard' ? 3 : 6,
-    });
-    void broadcast(next);
+    const base = { ...cur, gameMode: mode, totalRounds: mode === 'standard' ? 3 : 6, powersEnabled };
+    if (powersEnabled) {
+      void broadcast(startPowerSelect(base));
+    } else {
+      void broadcast(startGameSelect(base));
+    }
   }, [isHost, broadcast]);
 
   const hostAdvanceFromGameSelect = useCallback(() => {
     const cur = stateRef.current;
     if (!cur || !isHost) return;
     const next = resolveGameSelect(cur);
+    void broadcast(next);
+  }, [isHost, broadcast]);
+
+  const hostAdvanceFromPowerSelect = useCallback(() => {
+    const cur = stateRef.current;
+    if (!cur || !isHost) return;
+    if (cur.phase !== 'power-select') return;
+    const next = resolvePowerSelect(cur);
     void broadcast(next);
   }, [isHost, broadcast]);
 
@@ -600,6 +637,14 @@ export function useGameState(): UseGameStateApi {
     dispatchPlayerAction({ type: 'bailout-choice', amount });
   }, [dispatchPlayerAction]);
 
+  const selectPlayerPower = useCallback((power: PowerType) => {
+    dispatchPlayerAction({ type: 'select-power', power });
+  }, [dispatchPlayerAction]);
+
+  const activatePlayerPower = useCallback((targetId?: string) => {
+    dispatchPlayerAction({ type: 'activate-power', targetId });
+  }, [dispatchPlayerAction]);
+
   // Detect self in state
   const self = state && selfId ? state.players[selfId] ?? null : null;
 
@@ -620,6 +665,7 @@ export function useGameState(): UseGameStateApi {
     leave,
     hostStartGame,
     hostAdvanceFromGameSelect,
+    hostAdvanceFromPowerSelect,
     hostAdvanceFromFinalVote,
     hostResolveCoinflip,
     hostAdvanceFromRoundTimeout,
@@ -633,5 +679,7 @@ export function useGameState(): UseGameStateApi {
     sendLiveBalance,
     sendRoundEndBalance,
     chooseBailout,
+    selectPlayerPower,
+    activatePlayerPower,
   };
 }

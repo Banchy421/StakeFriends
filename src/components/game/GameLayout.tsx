@@ -18,6 +18,7 @@ import { Crash } from '@/components/games/Crash';
 import { Coinflip } from '@/components/games/Coinflip';
 import { Keno } from '@/components/games/Keno';
 import { ThemePicker } from '@/components/theme/ThemePicker';
+import { PowerButton } from './PowerButton';
 import { cn } from '@/lib/utils';
 
 interface GameLayoutProps {
@@ -29,6 +30,7 @@ interface GameLayoutProps {
   onLiveBalance: (balance: number) => void;
   onRoundEndBalance: (balance: number) => void;
   onForceEndRound: () => void;
+  onActivatePower: (targetId?: string) => void;
   onLeave: () => void;
 }
 
@@ -53,7 +55,7 @@ const GAME_COMPONENTS: Record<GameName, React.ComponentType<GameProps>> = {
 };
 
 export function GameLayout({
-  state, self, isHost, onSkipVote, onUnskipVote, onLiveBalance, onRoundEndBalance, onForceEndRound, onLeave,
+  state, self, isHost, onSkipVote, onUnskipVote, onLiveBalance, onRoundEndBalance, onForceEndRound, onActivatePower, onLeave,
 }: GameLayoutProps) {
   const [isMobile, setIsMobile] = useState(false);
   // Initialize from the authoritative balance in game state (not 100).
@@ -267,6 +269,11 @@ export function GameLayout({
           </div>
         </main>
       </div>
+
+      {/* Floating power button — only if powers are enabled and player has a power */}
+      {state.powersEnabled && self?.power && (
+        <PowerButton state={state} self={self} onActivate={onActivatePower} />
+      )}
     </div>
   );
 }

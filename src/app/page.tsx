@@ -10,6 +10,7 @@ import { RoundTimeoutScreen } from '@/components/phases/RoundTimeoutScreen';
 import { FinalVoteScreen } from '@/components/phases/FinalVoteScreen';
 import { FinalCoinflipScreen } from '@/components/phases/FinalCoinflipScreen';
 import { ResultsScreen } from '@/components/phases/ResultsScreen';
+import { PowerSelectScreen } from '@/components/phases/PowerSelectScreen';
 import { GameLayout } from '@/components/game/GameLayout';
 import type { Player, GameMode } from '@/lib/types';
 import { makeSelfPlayer } from '@/lib/p2p';
@@ -111,8 +112,8 @@ export default function Home() {
     setView('landing');
   };
 
-  const handleStart = (gameMode: GameMode) => {
-    api.hostStartGame(gameMode);
+  const handleStart = (gameMode: GameMode, powersEnabled: boolean) => {
+    api.hostStartGame(gameMode, powersEnabled);
   };
 
   if (view === 'landing') {
@@ -181,6 +182,17 @@ export default function Home() {
         />
       )}
 
+      {phase === 'power-select' && (
+        <PowerSelectScreen
+          state={api.state}
+          self={api.self}
+          isHost={api.isHost}
+          onSelect={api.selectPlayerPower}
+          onAdvance={api.hostAdvanceFromPowerSelect}
+          onLeave={handleLeave}
+        />
+      )}
+
       {phase === 'game-select' && (
         <GameSelectScreen
           state={api.state}
@@ -224,6 +236,7 @@ export default function Home() {
           onLiveBalance={api.sendLiveBalance}
           onRoundEndBalance={api.sendRoundEndBalance}
           onForceEndRound={api.hostForceEndRound}
+          onActivatePower={api.activatePlayerPower}
           onLeave={handleLeave}
         />
       )}

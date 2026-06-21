@@ -6,9 +6,10 @@
 // where WebRTC data channels aren't fully supported.
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { GameState, Player, PlayerAction, GameMode, GameName } from '@/lib/types';
+import type { GameState, Player, PlayerAction, GameMode, GameName, PowerType } from '@/lib/types';
 import {
   makeInitialState,
+  makeDefaultPlayer,
   addPlayer,
   removePlayer,
   startGameSelect,
@@ -23,6 +24,10 @@ import {
   advanceAfterTimeout,
   skipRound,
   resetForPlayAgain,
+  startPowerSelect,
+  resolvePowerSelect,
+  selectPower,
+  activatePower,
 } from '@/lib/gameLogic';
 import { Sound } from '@/lib/sounds';
 import { generateRoomCode, randomSeed } from '@/lib/utils-casino';
@@ -38,8 +43,9 @@ export interface UseLocalGameStateApi {
   joinRoomByCode: (player: Player, code: string) => void;
   leave: () => void;
   // host actions
-  hostStartGame: (mode: GameMode) => void;
+  hostStartGame: (mode: GameMode, powersEnabled: boolean) => void;
   hostAdvanceFromGameSelect: () => void;
+  hostAdvanceFromPowerSelect: () => void;
   hostAdvanceFromFinalVote: () => void;
   hostResolveCoinflip: () => void;
   hostAdvanceFromRoundTimeout: () => void;
@@ -54,6 +60,8 @@ export interface UseLocalGameStateApi {
   sendLiveBalance: (balance: number) => void;
   sendRoundEndBalance: (balance: number) => void;
   chooseBailout: (amount: number) => void;
+  selectPlayerPower: (power: PowerType) => void;
+  activatePlayerPower: (targetId?: string) => void;
 }
 
 const SOLO_BOT_NAMES = ['Bot Alex', 'Bot Sam', 'Bot Jordan', 'Bot Casey', 'Bot Riley'];
@@ -143,26 +151,38 @@ export function useLocalGameState(): UseLocalGameStateApi {
     } catch {}
   }, []);
 
-  const hostStartGame = useCallback((mode: GameMode) => {
+  const hostStartGame = useCallback((mode: GameMode, powersEnabled: boolean) => {
     const cur = stateRef.current;
     if (!cur) return;
-    // Spawn 2 bot opponents in solo mode for testing
-    let next = { ...cur, gameMode: mode, totalRounds: mode === 'standard' ? 3 : 6 };
+    let next = { ...cur, gameMode: mode, totalRounds: mode === 'standard' ? 3 : 6, powersEnabled };
     for (let i = 0; i < 2; i++) {
-      const bot: Player = {
-        id: `bot-${i}-${Date.now()}`,
-        name: SOLO_BOT_NAMES[i],
-        avatar: SOLO_BOT_AVATARS[i],
-        balance: 100,
-        roundBonus: 1.0,
-        bailoutUsed: false,
-        isHost: false,
-        isEliminated: false,
-        joinedAt: Date.now() + i,
-      };
+      const bot = makeDefaultPlayer(`bot-${i}-${Date.now()}`, SOLO_BOT_NAMES[i], SOLO_BOT_AVATARS[i], false);
       next = addPlayer(next, bot);
     }
-    next = startGameSelect(next);
+    if (powersEnabled) {
+      next = startPowerSelect(next);
+    } else {
+      next = startGameSelect(next);
+    }
+    Sound.fanfare();
+    broadcast(next);
+  }, [broadcast]);
+
+  const hostAdvanceFromPowerSelect = useCallback(() => {
+    const cur = stateRef.current;
+    if (!cur) return;
+    if (cur.phase !== 'power-select') return;
+    // Auto-select for bots
+    let next = cur;
+    for (const pid of Object.keys(next.players)) {
+      if (pid.startsWith('bot-') && !next.powerSelections[pid]) {
+        const opts = next.powerOptions[pid];
+        if (opts && opts.length > 0) {
+          next = selectPower(next, pid, opts[Math.floor(Math.random() * opts.length)]);
+        }
+      }
+    }
+    next = resolvePowerSelect(next);
     Sound.fanfare();
     broadcast(next);
   }, [broadcast]);
@@ -372,6 +392,34 @@ export function useLocalGameState(): UseLocalGameStateApi {
     broadcast(applyBailout(cur, selfRef.current.id, amount));
   }, [broadcast]);
 
+  const selectPlayerPower = useCallback((power: PowerType) => {
+    const cur = stateRef.current;
+    if (!cur || !selfRef.current) return;
+    let next = selectPower(cur, selfRef.current.id, power);
+    // Auto-select for bots
+    for (const pid of Object.keys(next.players)) {
+      if (pid.startsWith('bot-') && !next.powerSelections[pid]) {
+        const opts = next.powerOptions[pid];
+        if (opts && opts.length > 0) {
+          next = selectPower(next, pid, opts[Math.floor(Math.random() * opts.length)]);
+        }
+      }
+    }
+    // Check if all selected
+    const active = Object.keys(next.players).filter((id) => !next.players[id].isEliminated);
+    if (active.every((id) => next.powerSelections[id])) {
+      next = resolvePowerSelect(next);
+      Sound.fanfare();
+    }
+    broadcast(next);
+  }, [broadcast]);
+
+  const activatePlayerPower = useCallback((targetId?: string) => {
+    const cur = stateRef.current;
+    if (!cur || !selfRef.current) return;
+    broadcast(activatePower(cur, selfRef.current.id, targetId));
+  }, [broadcast]);
+
   // Auto-advance from game-select when timer hits 0 — handled by useTimer in components.
   // But we also need to auto-pick for the player if they didn't pick:
   // resolveGameSelect handles that.
@@ -393,6 +441,7 @@ export function useLocalGameState(): UseLocalGameStateApi {
     leave,
     hostStartGame,
     hostAdvanceFromGameSelect,
+    hostAdvanceFromPowerSelect,
     hostAdvanceFromFinalVote,
     hostResolveCoinflip,
     hostAdvanceFromRoundTimeout,
@@ -406,5 +455,7 @@ export function useLocalGameState(): UseLocalGameStateApi {
     sendLiveBalance,
     sendRoundEndBalance,
     chooseBailout,
+    selectPlayerPower,
+    activatePlayerPower,
   };
 }
